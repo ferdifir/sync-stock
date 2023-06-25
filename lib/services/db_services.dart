@@ -27,14 +27,18 @@ class DbServices {
   }
 
   Future<bool> insertData(
-    String tableName,
-    List<String> columns,
-    List<Map<String, dynamic>> data,
-  ) async {
+      String tableName,
+      List<Map<String, dynamic>> data, {
+        Function(String status, double progress)? callback,
+  }) async {
     try {
       final database = await openDB();
       await database.delete(tableName);
       for (var element in data) {
+        double iteration = data.indexOf(element) / data.length;
+        if (callback != null) {
+          callback('Memasukkan data ${element['nama']}', iteration);
+        }
         await database.insert(tableName, element);
       }
       await database.close();

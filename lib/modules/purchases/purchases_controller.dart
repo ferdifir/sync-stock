@@ -19,6 +19,11 @@ class PurchasesController extends GetxController {
     getPurchasesMaster();
   }
 
+  clearFilter() {
+    fromDate.value = '';
+    toDate.value = '';
+  }
+
   toggleSearch() {
     isSearch.value = !isSearch.value;
   }

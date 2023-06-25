@@ -19,6 +19,11 @@ class SalesController extends GetxController {
     getSalesMaster();
   }
 
+  clearFilter() {
+    fromDate.value = '';
+    toDate.value = '';
+  }
+
   toggleSearch() {
     isSearch.value = !isSearch.value;
   }

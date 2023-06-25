@@ -52,112 +52,22 @@ class PembelianPage extends StatelessWidget {
                   ),
                 ),
               ),
-              IconButton(
-                onPressed: () {
-                  Get.bottomSheet(
-                    Container(
-                      height: 250,
-                      padding: const EdgeInsets.all(20),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(20),
-                          topRight: Radius.circular(20),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          const Text(
-                            'Filter Tanggal',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Dari Tanggal'),
-                              Obx(() => TextButton(
-                                    onPressed: () {
-                                      showDatePicker(
-                                        context: context,
-                                        initialDate: DateTime.now(),
-                                        firstDate: DateTime(2010),
-                                        lastDate: DateTime(2030),
-                                      ).then((value) {
-                                        if (value != null) {
-                                          String selectedDate = value
-                                              .toString()
-                                              .substring(0,
-                                                  10); // Ambil substring dari indeks 0 hingga 9 untuk mendapatkan format 'yyyy-MM-dd'
-                                          ctx.fromDate.value = selectedDate;
-                                        }
-                                      });
-                                    },
-                                    child: Text(
-                                      ctx.fromDate.value.isEmpty
-                                          ? 'Pilih Tanggal'
-                                          : Helper.convertToDate(
-                                              ctx.fromDate.value),
-                                    ),
-                                  )),
-                            ],
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Sampai Tanggal'),
-                              Obx(() => TextButton(
-                                    onPressed: () {
-                                      showDatePicker(
-                                        context: context,
-                                        initialDate: DateTime.now(),
-                                        firstDate: DateTime(2010),
-                                        lastDate: DateTime(2030),
-                                      ).then((value) {
-                                        if (value != null) {
-                                          String selectedDate = value
-                                              .toString()
-                                              .substring(0,
-                                                  10); // Ambil substring dari indeks 0 hingga 9 untuk mendapatkan format 'yyyy-MM-dd'
-                                          ctx.toDate.value = selectedDate;
-                                        }
-                                      });
-                                    },
-                                    child: Text(
-                                      ctx.toDate.value.isEmpty
-                                          ? 'Pilih Tanggal'
-                                          : Helper.convertToDate(
-                                              ctx.toDate.value),
-                                    ),
-                                  )),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: () {
-                              ctx.filterPurchases(
-                                  ctx.fromDate.value, ctx.toDate.value);
-                              Get.back();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              backgroundColor: Colors.blue,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              minimumSize: const Size(200, 40),
-                            ),
-                            child: const Text('Filter'),
-                          ),
-                        ],
-                      ),
-                    ),
+              Obx(
+                () {
+                  return IconButton(
+                    onPressed: () {
+                      if(ctx.fromDate.value.isEmpty && ctx.toDate.value.isEmpty) {
+                        showDateFilterSheet(context, ctx);
+                      } else {
+                        ctx.clearFilter();
+                        ctx.getPurchasesMaster();
+                      }
+                    },
+                    icon: ctx.fromDate.value.isEmpty && ctx.toDate.value.isEmpty
+                        ? const Icon(Icons.date_range)
+                        : const Icon(Icons.format_clear),
                   );
-                },
-                icon: const Icon(Icons.date_range),
+                }
               ),
             ],
           ),
@@ -166,14 +76,14 @@ class PembelianPage extends StatelessWidget {
                 ? const Center(
                     child: CircularProgressIndicator(),
                   )
-                : buildList(ctx),
+                : buildList(ctx, context),
           ),
         );
       },
     );
   }
 
-  buildList(PurchasesController ctx) {
+  buildList(PurchasesController ctx, BuildContext context) {
     final bool state =
         ctx.fromDate.value.isNotEmpty && ctx.toDate.value.isNotEmpty;
     return Obx(
@@ -188,15 +98,50 @@ class PembelianPage extends StatelessWidget {
                       ? Container(
                           color: Colors.grey[200],
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
+                            horizontal: 10,
                             vertical: 10,
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(Helper.convertToDate(ctx.fromDate.value)),
-                              const Icon(Icons.arrow_forward),
-                              Text(Helper.convertToDate(ctx.toDate.value)),
+                              Expanded(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    TextButton(
+                                      onPressed: (){
+                                        selectDate(
+                                          context,
+                                          ctx,
+                                          'from',
+                                        );
+                                      },
+                                      child: Text(Helper.convertToDate(ctx.fromDate.value),
+                                      ),
+                                    ),
+                                    const Icon(Icons.arrow_forward),
+                                    TextButton(
+                                      onPressed: (){
+                                        selectDate(
+                                          context,
+                                          ctx,
+                                          'to',
+                                        );
+                                      },
+                                      child: Text(
+                                        Helper.convertToDate(ctx.toDate.value),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              InkWell(
+                                onTap: (){
+                                  ctx.filterPurchases(ctx.fromDate.value, ctx.toDate.value);
+                                },
+                                child: const Icon(Icons.send),
+                              )
                             ],
                           ))
                       : Container(),
@@ -330,5 +275,145 @@ class PembelianPage extends StatelessWidget {
         ),
       ],
     ));
+  }
+
+  void selectDate(BuildContext context, PurchasesController ctx, String date) {
+    DateTime? fromDate = ctx.fromDate.value.isEmpty ? null : DateTime.parse(ctx.fromDate.value);
+    DateTime? toDate = ctx.toDate.value.isEmpty ? null : DateTime.parse(ctx.toDate.value);
+    showDatePicker(
+      context: context,
+      initialDate: ctx.fromDate.value.isEmpty
+          ? DateTime.now()
+          : DateTime.parse(ctx.fromDate.value),
+      firstDate: ctx.toDate.value.isEmpty || date == 'from'
+          ? DateTime(2010)
+          : DateTime(fromDate!.year, fromDate.month, fromDate.day),
+      lastDate: ctx.fromDate.value.isEmpty || date == 'to'
+          ? DateTime(2030)
+          : DateTime(toDate!.year, toDate.month, toDate.day),
+    ).then((value) {
+      if (value != null) {
+        String selectedDate = value
+            .toString()
+            .substring(0,
+            10); // Ambil substring dari indeks 0 hingga 9 untuk mendapatkan format 'yyyy-MM-dd'
+        if (date == 'to') {
+          ctx.toDate.value = selectedDate;
+        } else {
+          ctx.fromDate.value = selectedDate;
+        }
+      }
+    });
+  }
+
+  void showDateFilterSheet(
+      BuildContext context,
+      PurchasesController ctx,
+      ) {
+    Get.bottomSheet(
+      Container(
+        height: 250,
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          children: [
+            const Text(
+              'Filter Tanggal',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Dari Tanggal'),
+                Obx(() => TextButton(
+                  onPressed: () {
+                    selectDate(
+                      context,
+                      ctx,
+                      'from',
+                    );
+                  },
+                  child: Text(
+                    ctx.fromDate.value.isEmpty
+                        ? 'Pilih Tanggal'
+                        : Helper.convertToDate(
+                        ctx.fromDate.value),
+                  ),
+                )),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Sampai Tanggal'),
+                Obx(() => TextButton(
+                  onPressed: () {
+                    selectDate(
+                      context,
+                      ctx,
+                      'to',
+                    );
+                  },
+                  child: Text(
+                    ctx.toDate.value.isEmpty
+                        ? 'Pilih Tanggal'
+                        : Helper.convertToDate(
+                        ctx.toDate.value),
+                  ),
+                )),
+              ],
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                if(ctx.toDate.value.isNotEmpty && ctx.fromDate.value.isNotEmpty) {
+                  ctx.filterPurchases(
+                      ctx.fromDate.value, ctx.toDate.value);
+                  Get.back();
+                } else {
+                  Get.dialog(
+                    WillPopScope(
+                      onWillPop: () async => false,
+                      child: AlertDialog(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        title: const Text('Perhatian!'),
+                        content: const Text('Silahkan isi Tanggal mulai dan Tanggal akhir untuk mendapatkan filter produk'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Get.back(),
+                            child: const Text('OK'),
+                          )
+                        ],
+                      ),
+                    )
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.blue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                minimumSize: const Size(200, 40),
+              ),
+              child: const Text('Filter'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

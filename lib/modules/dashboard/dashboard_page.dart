@@ -132,8 +132,11 @@ class DashboardPage extends StatelessWidget {
                     if (isAvail) {
                       Get.toNamed(AppRoutes.MASTER);
                     } else {
-                      showLoadingDialog('Produk');
-                      ctx.loadDataMaster().then((value) {
+                      //showLoadingDialog('Memuat Data Produk untuk pertama kali');
+                      showProgressDialog();
+                      ctx.loadDataMaster((status, progress){
+                        ctx.updateStatusProgress(status, progress);
+                      }).then((value) {
                         Get.back();
                         if (value) {
                           Get.toNamed(AppRoutes.MASTER);
@@ -150,8 +153,11 @@ class DashboardPage extends StatelessWidget {
                     if (isAvail) {
                       Get.toNamed(AppRoutes.PURCHASES);
                     } else {
-                      showLoadingDialog('Pembelian');
-                      ctx.loadDataPurchases().then((value) {
+                      //showLoadingDialog('Memuat Data Pembelian untuk pertama kali');
+                      showProgressDialog();
+                      ctx.loadDataPurchases((status, progress){
+                        ctx.updateStatusProgress(status, progress);
+                      }).then((value) {
                         Get.back();
                         if (value) {
                           Get.toNamed(AppRoutes.PURCHASES);
@@ -174,8 +180,11 @@ class DashboardPage extends StatelessWidget {
                     if (isAvail) {
                       Get.toNamed(AppRoutes.SALES);
                     } else {
-                      showLoadingDialog('Penjualan');
-                      ctx.loadDataSales().then((value) {
+                      //showLoadingDialog('Memuat Data Penjualan untuk pertama kali');
+                      showProgressDialog();
+                      ctx.loadDataSales((status, progress){
+                        ctx.updateStatusProgress(status, progress);
+                      }).then((value) {
                         Get.back();
                         if (value) {
                           Get.toNamed(AppRoutes.SALES);
@@ -188,8 +197,17 @@ class DashboardPage extends StatelessWidget {
                   image: 'assets/3.png',
                   title: 'Sinkronisasi Data',
                   onTap: () {
-                    showLoadingDialog('Keseluruhan');
-                    ctx.syncData().then((value) => Get.back());
+                    // showLoadingDialog('Sinkronisasi seluruh data...');
+                    showSynchronizationAlert(() {
+                      Get.back();
+                      showProgressDialog();
+                      ctx.syncData((status, progress){
+                        ctx.updateStatusProgress(status, progress);
+                      }).then((value) {
+                        Get.back();
+                        showFinishSyncDialog(value);
+                      });
+                    });
                   },
                 ),
               ],
@@ -239,7 +257,7 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  void showLoadingDialog(String dataType) {
+  void showLoadingDialog(String content) {
     Get.dialog(WillPopScope(
       onWillPop: () async => false,
       child: Dialog(
@@ -253,7 +271,10 @@ class DashboardPage extends StatelessWidget {
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: 20),
-              Text('Memuat $dataType untuk pertama kali'),
+              Text(
+                content,
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
@@ -299,10 +320,7 @@ class DashboardPage extends StatelessWidget {
             child: const Text('Tutup'),
           ),
           TextButton(
-            onPressed: () {
-              onConfirm();
-              Get.back();
-            },
+            onPressed: onConfirm,
             child: const Text('Sinkronisasi'),
           ),
         ],
@@ -334,6 +352,44 @@ class DashboardPage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void showFinishSyncDialog(bool value) {
+    Get.dialog(
+        Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  value ? Icons.check_circle : Icons.warning_amber_sharp,
+                  color: value ? Colors.green : Colors.red,
+                  size: 40,
+                ),
+                const SizedBox(height: 10),
+                Text(value ? 'Data berhasil disinkronkan' : 'Data gagal disinkronkan'),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: (){
+                        Get.offAllNamed(AppRoutes.DASHBOARD);
+                      }, 
+                      child: const Text('OK'),
+                    )
+                  ],
+                )
+              ],
+            ),
+          ),
+        )
     );
   }
 }

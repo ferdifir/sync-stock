@@ -9,12 +9,8 @@ class LoginPage extends StatelessWidget {
 
   final formKey = GlobalKey<FormState>();
   final ctx = Get.find<LoginController>();
-  final usernameController = TextEditingController(
-    text: 'admin',
-  );
-  final passwordController = TextEditingController(
-    text: '123',
-  );
+  final usernameController = TextEditingController();
+  final passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -246,6 +242,45 @@ class LoginPage extends StatelessWidget {
                       ),
                     ),
                   ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 24,
+              right: 20,
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.grey,
+                  borderRadius: BorderRadius.circular(20)
+                ),
+                child: IconButton(
+                  onPressed: () {
+                    Get.dialog(WillPopScope(
+                      onWillPop: () async => false,
+                      child: Dialog(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              CircularProgressIndicator(),
+                              SizedBox(height: 20),
+                              Text(
+                                'Memuat Data user terbaru',
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ));
+                    ctx.loadDataUser().then((value) => Get.back());
+                  },
+                  icon: const Icon(Icons.sync),
                 ),
               ),
             ),

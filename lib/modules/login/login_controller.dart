@@ -1,14 +1,16 @@
 import 'package:get/get.dart';
-import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:stockmobilesync/models/users.dart';
 import 'package:stockmobilesync/services/db_services.dart';
 import 'package:stockmobilesync/utils/config.dart';
+import 'package:stockmobilesync/utils/log.dart';
+
+import '../../services/api_services.dart';
 
 class LoginController extends GetxController {
   SharedPreferences? pref;
   final db = DbServices();
+  final api = ApiServices();
   RxBool rememberMe = false.obs;
   RxBool showPassword = false.obs;
 
@@ -48,6 +50,22 @@ class LoginController extends GetxController {
       }
     } catch (e) {
       printError(info: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> loadDataUser() async {
+    try {
+      db.openDB();
+      List<Users> users = await api.fetchUserData();
+      db.insertData(
+        'users',
+        users.map((e) => e.toJson()).toList(),
+      );
+
+      return true;
+    } catch (e) {
+      Log.d('Load Data User', e.toString());
       return false;
     }
   }

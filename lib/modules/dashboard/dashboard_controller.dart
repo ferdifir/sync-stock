@@ -29,6 +29,11 @@ class DashboardController extends GetxController {
     fetchUserData();
   }
 
+  updateStatusProgress(String s, double p) {
+    statusSync.value = s;
+    progressSync.value = p;
+  }
+
   void fetchUserData() {
     name.value = pref?.getString(namePrefKey) ?? '';
     email.value = pref?.getString(emailPrefKey) ?? '';
@@ -40,7 +45,7 @@ class DashboardController extends GetxController {
     String query = "SELECT * FROM $tableName";
     String limit = "LIMIT 1";
     if (forAvailibility) {
-      return query + limit;
+      return '$query $limit';
     } else {
       return query;
     }
@@ -91,65 +96,80 @@ class DashboardController extends GetxController {
     return purchasesData;
   }
 
-  Future<bool> loadDataMaster() async {
+  Future<bool> loadDataMaster(Function(String, double)? callback) async {
+    callback!('Memulai Sinkronisasi', 0.001);
     List<Master> master = await api.fetchMasterData();
+    callback('Mengambil Data Produk dari API', 0.002);
     bool isSuccess = await db.insertData(
       'master',
-      dbMasterQuery,
       master.map((e) => e.toJson()).toList(),
+      callback: callback
     );
     return isSuccess;
   }
 
-  Future<bool> loadDataSales() async {
+  Future<bool> loadDataSales(Function(String, double)? callback) async {
+    callback!('Memulai Sinkronisasi', 0.001);
     List<Sales> sales = await api.fetchSalesData();
+    callback('Mengambil Data Penjualan dari API', 0.002);
     bool isSuccess = await db.insertData(
       'sales',
-      dbSalesQuery,
       sales.map((e) => e.toJson()).toList(),
+      callback: callback
     );
     return isSuccess;
   }
 
-  Future<bool> loadDataPurchases() async {
+  Future<bool> loadDataPurchases(Function(String, double)? callback) async {
+    callback!('Memulai Sinkronisasi', 0.001);
     List<Purchases> purchases = await api.fetchPurchasesData();
+    callback('Mengambil Data Pembelian dari API', 0.002);
     bool isSuccess = await db.insertData(
       'purchases',
-      dbPurchasesQuery,
       purchases.map((e) => e.toJson()).toList(),
+      callback: callback
     );
     return isSuccess;
   }
 
-  Future<bool> syncData() async {
-    try {
-      List<Master> masterApi = await api.fetchMasterData();
-      List<Master> masterDb = await getMaster(false);
-      List<Purchases> purchasesApi = await api.fetchPurchasesData();
-      List<Purchases> purchasesDb = await getPurchases(false);
-      List<Sales> salesApi = await api.fetchSalesData();
-      List<Sales> salesDb = await getSales(false);
+  Future<bool> syncData(Function(String, double) callback) async {
+    callback('Memulai Sinkronisasi', 0.001);
+    List<Master> masterApi = await api.fetchMasterData();
+    callback('Mengambil data Produk dari API', 0.001);
+    List<Master> masterDb = await getMaster(false);
+    List<Purchases> purchasesApi = await api.fetchPurchasesData();
+    callback('Mengambil Data Pembelian dari API', 0.002);
+    List<Purchases> purchasesDb = await getPurchases(false);
+    List<Sales> salesApi = await api.fetchSalesData();
+    callback('Mengambil Data Penjualan dari API', 0.003);
+    List<Sales> salesDb = await getSales(false);
 
-      bool isMasterUpdated = Helper.areListsEqual(api: masterApi, db: masterDb);
-      bool isSalesUpdated = Helper.areListsEqual(api: purchasesApi, db: purchasesDb);
-      bool isPurchasesUpdated = Helper.areListsEqual(api: salesApi, db: salesDb);
+    bool isMasterUpdated = Helper.areListsEqual(api: masterApi, db: masterDb);
+    callback('Mengecek data Produk', 0.004);
+    bool isSalesUpdated = Helper.areListsEqual(api: purchasesApi, db: purchasesDb);
+    callback('Mengecek data penjualan', 0.005);
+    bool isPurchasesUpdated = Helper.areListsEqual(api: salesApi, db: salesDb);
+    callback('Mengecek data pembelian', 0.006);
 
-      if (!isMasterUpdated) {
-        loadDataMaster();
-      }
-
-      if (!isSalesUpdated) {
-        loadDataSales();
-      }
-
-      if (!isPurchasesUpdated) {
-        loadDataPurchases();
-      }
-
-      return true;
-    } catch(e) {
-      return false;
+    bool masterSync = false;
+    if (!isMasterUpdated) {
+      masterSync = await loadDataMaster(callback);
     }
+    print(masterSync);
+
+    bool salesSync = false;
+    if (!isSalesUpdated) {
+      salesSync = await loadDataSales(callback);
+    }
+    print(salesSync);
+
+    bool purchaseSync = false;
+    if (!isPurchasesUpdated) {
+      purchaseSync = await loadDataPurchases(callback);
+    }
+    print(purchaseSync);
+
+    return true;
   }
 
 }

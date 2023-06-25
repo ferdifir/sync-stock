@@ -8,7 +8,6 @@ import 'package:stockmobilesync/services/data_synchronization.dart';
 import 'package:stockmobilesync/utils/log.dart';
 
 class SplashController extends GetxController {
-  SharedPreferences? pref;
   final api = ApiServices();
   final db = DbServices();
   final syncData = DataSynchronization();
@@ -18,21 +17,18 @@ class SplashController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    initPref();
     loadPref();
   }
 
-  initPref() async {
-    pref = await SharedPreferences.getInstance();
+  void loadPref() async {
+    final pref = await SharedPreferences.getInstance();
+    isFirstTime.value = pref.getBool(firstTimePrefKey) ?? true;
+    isRemember.value = pref.getBool(rememberMePrefKey) ?? false;
   }
 
-  void loadPref() {
-    isFirstTime.value = pref?.getBool(firstTimePrefKey) ?? true;
-    isRemember.value = pref?.getBool(rememberMePrefKey) ?? false;
-  }
-
-  void setPref() {
-    pref?.setBool(firstTimePrefKey, false);
+  void setPref() async {
+    final pref = await SharedPreferences.getInstance();
+    pref.setBool(firstTimePrefKey, false);
   }
 
   Future<bool> loadDataUser() async {
@@ -41,11 +37,8 @@ class SplashController extends GetxController {
       List<Users> users = await api.fetchUserData();
       db.insertData(
         'users',
-        dbUsersQuery,
         users.map((e) => e.toJson()).toList(),
       );
-
-      setPref();
 
       return true;
     } catch (e) {
