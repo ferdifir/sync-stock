@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:stockmobilesync/modules/dashboard/dashboard_controller.dart';
+import 'package:stockmobilesync/modules/dashboard/progress_dialog.dart';
 import 'package:stockmobilesync/routes/app_routes.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -126,40 +127,36 @@ class DashboardPage extends StatelessWidget {
                 buildItemDashboard(
                   image: 'assets/1.png',
                   title: 'Master Produk',
-                  onTap: () => Navigator.pushNamed(
-                    context,
-                    AppRoutes.MASTER,
-                  ),
+                  onTap: () async {
+                    var isAvail = await ctx.checkDataMaster();
+                    if (isAvail) {
+                      Get.toNamed(AppRoutes.MASTER);
+                    } else {
+                      showLoadingDialog('Produk');
+                      ctx.loadDataMaster().then((value) {
+                        Get.back();
+                        if (value) {
+                          Get.toNamed(AppRoutes.MASTER);
+                        }
+                      });
+                    }
+                  },
                 ),
                 buildItemDashboard(
                   image: 'assets/2.png',
                   title: 'Data Pembelian',
-                  onTap: () {
-                    if (ctx.isPurchasesAvailable.value) {
-                      Navigator.pushNamed(
-                        context,
-                        AppRoutes.PURCHASES,
-                      );
+                  onTap: () async {
+                    bool isAvail = await ctx.checkDataPurchases();
+                    if (isAvail) {
+                      Get.toNamed(AppRoutes.PURCHASES);
                     } else {
-                      Get.dialog(
-                        AlertDialog(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          title: const Text('Perhatian'),
-                          content: const Text(
-                            'Data pembelian belum tersedia, silahkan sinkronisasi data terlebih dahulu',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              child: const Text('Tutup'),
-                            ),
-                          ],
-                        ),
-                      );
+                      showLoadingDialog('Pembelian');
+                      ctx.loadDataPurchases().then((value) {
+                        Get.back();
+                        if (value) {
+                          Get.toNamed(AppRoutes.PURCHASES);
+                        }
+                      });
                     }
                   },
                 ),
@@ -172,32 +169,18 @@ class DashboardPage extends StatelessWidget {
                 buildItemDashboard(
                   image: 'assets/4.png',
                   title: 'Data Penjualan',
-                  onTap: () {
-                    if (ctx.isSalesAvailable.value) {
-                      Navigator.pushNamed(
-                        context,
-                        AppRoutes.SALES,
-                      );
+                  onTap: () async {
+                    bool isAvail = await ctx.checkDataSales();
+                    if (isAvail) {
+                      Get.toNamed(AppRoutes.SALES);
                     } else {
-                      Get.dialog(
-                        AlertDialog(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          title: const Text('Perhatian'),
-                          content: const Text(
-                            'Data penjualan belum tersedia, silahkan sinkronisasi data terlebih dahulu',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              child: const Text('Tutup'),
-                            ),
-                          ],
-                        ),
-                      );
+                      showLoadingDialog('Penjualan');
+                      ctx.loadDataSales().then((value) {
+                        Get.back();
+                        if (value) {
+                          Get.toNamed(AppRoutes.SALES);
+                        }
+                      });
                     }
                   },
                 ),
@@ -205,25 +188,8 @@ class DashboardPage extends StatelessWidget {
                   image: 'assets/3.png',
                   title: 'Sinkronisasi Data',
                   onTap: () {
-                    showSynchronizationAlert(() {
-                      if (ctx.firstSynch.value) {
-                        ctx.firstSync((status, progress) {
-                          showProgressDialog(status, progress);
-                        }).then((value) {
-                          if (value) {
-                            Get.offAllNamed(AppRoutes.DASHBOARD);
-                          }
-                        });
-                      } else {
-                        ctx.syncData((status, progress) {
-                          showProgressDialog(status, progress);
-                        }).then((value) {
-                          if (value) {
-                            Get.offAllNamed(AppRoutes.DASHBOARD);
-                          }
-                        });
-                      }
-                    });
+                    showLoadingDialog('Keseluruhan');
+                    ctx.syncData().then((value) => Get.back());
                   },
                 ),
               ],
@@ -250,17 +216,13 @@ class DashboardPage extends StatelessWidget {
                         actions: [
                           TextButton(
                             onPressed: () {
-                              Navigator.pop(context);
+                              Get.back();
                             },
                             child: const Text('Tidak'),
                           ),
                           TextButton(
                             onPressed: () {
-                              Navigator.pop(context);
-                              Navigator.pushReplacementNamed(
-                                context,
-                                AppRoutes.LOGIN,
-                              );
+                              Get.offAllNamed(AppRoutes.LOGIN);
                             },
                             child: const Text('Ya'),
                           ),
@@ -277,27 +239,33 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  void showProgressDialog(String status, double progress) {
-    Get.dialog(
-      AlertDialog(
+  void showLoadingDialog(String dataType) {
+    Get.dialog(WillPopScope(
+      onWillPop: () async => false,
+      child: Dialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-        title: const Text('Sinkronisasi Data'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(status),
-            const SizedBox(height: 10),
-            LinearProgressIndicator(
-              value: progress,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${(progress * 100).toStringAsFixed(0)}%',
-            ),
-          ],
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 20),
+              Text('Memuat $dataType untuk pertama kali'),
+            ],
+          ),
         ),
+      ),
+    ));
+  }
+
+  void showProgressDialog() {
+    Get.dialog(
+      WillPopScope(
+        onWillPop: () async => false,
+        child: const ProgressDialog(),
       ),
     );
   }

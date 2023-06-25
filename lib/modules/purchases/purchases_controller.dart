@@ -1,11 +1,11 @@
 import 'package:get/get.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
 import 'package:stockmobilesync/models/purchases.dart';
-import 'package:stockmobilesync/utils/config.dart';
+import 'package:stockmobilesync/services/db_services.dart';
+import 'package:stockmobilesync/utils/helper.dart';
 import 'package:stockmobilesync/utils/log.dart';
 
 class PurchasesController extends GetxController {
+  final db = DbServices();
   RxList<Purchases> purchases = RxList();
   RxBool isSearch = false.obs;
   RxBool isLoading = false.obs;
@@ -27,13 +27,8 @@ class PurchasesController extends GetxController {
     isLoading.value = true;
     purchases.clear();
     try {
-      var databasePath = await getDatabasesPath();
-      String path = join(databasePath, dbPurchases);
-      final db = await openDatabase(path);
-      List<Map<String,dynamic>> purchasesList = await db.rawQuery("SELECT * FROM purchases");
-      for (var data in purchasesList) {
-        purchases.add(Purchases.fromJson(data));
-      }
+      String query = "SELECT * FROM purchases";
+      purchases.value = await getListData(query);
       isLoading.value = false;
     } catch(e) {
       Log.e('Get List Purchases', e.toString());
@@ -41,19 +36,12 @@ class PurchasesController extends GetxController {
     }
   }
 
-  searchPurchases(String query) async {
+  searchPurchases(String keyword) async {
     isLoading.value = true;
     purchases.clear();
     try {
-      var databasePath = await getDatabasesPath();
-      String path = join(databasePath, dbPurchases);
-      final db = await openDatabase(path);
-      List<Map<String,dynamic>> purchasesList = await db.rawQuery(
-          "SELECT * FROM purchases WHERE nama LIKE '%$query%'");
-
-      for (var data in purchasesList) {
-        purchases.add(Purchases.fromJson(data));
-      }
+      String query = "SELECT * FROM purchases WHERE nama LIKE '%$keyword%'";
+      purchases.value = await getListData(query);
       isLoading.value = false;
     } catch(e) {
       Log.e('Search Purchases', e.toString());
@@ -65,19 +53,21 @@ class PurchasesController extends GetxController {
     isLoading.value = true;
     purchases.clear();
     try {
-      var databasePath = await getDatabasesPath();
-      String path = join(databasePath, dbPurchases);
-      final db = await openDatabase(path);
-      List<Map<String,dynamic>> purchasesList = await db.rawQuery(
-          "SELECT * FROM purchases WHERE nama LIKE '%${searchQuery.value}%' AND tgl BETWEEN '$from' AND '$to'");
-
-      for (var data in purchasesList) {
-        purchases.add(Purchases.fromJson(data));
-      }
+      String query = "SELECT * FROM purchases WHERE nama LIKE '%${searchQuery.value}%' AND tgl BETWEEN '$from' AND '$to'";
+      purchases.value = await getListData(query);
       isLoading.value = false;
     } catch(e) {
       Log.e('Filter Purchases', e.toString());
       isLoading.value = false;
     }
+  }
+
+  Future<List<Purchases>> getListData(String query) async {
+    var data = await db.getData<Purchases>(
+      'purchases',
+      query,
+      Helper.fromJsonPurchases,
+    );
+    return data;
   }
 }

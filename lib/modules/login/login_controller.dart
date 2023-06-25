@@ -2,15 +2,28 @@ import 'package:get/get.dart';
 import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:stockmobilesync/models/users.dart';
+import 'package:stockmobilesync/services/db_services.dart';
 import 'package:stockmobilesync/utils/config.dart';
 
 class LoginController extends GetxController {
+  SharedPreferences? pref;
+  final db = DbServices();
   RxBool rememberMe = false.obs;
   RxBool showPassword = false.obs;
 
+  @override
+  void onInit() {
+    super.onInit();
+    initPref();
+  }
+
+  initPref() async {
+    pref = await SharedPreferences.getInstance();
+  }
+
   setRememberMe() async {
-    SharedPreferences pref = await SharedPreferences.getInstance();
-    pref.setBool(rememberMePrefKey, rememberMe.value);
+    pref!.setBool(rememberMePrefKey, rememberMe.value);
   }
 
   toggleShowPassword() {
@@ -18,21 +31,19 @@ class LoginController extends GetxController {
   }
 
   Future<bool> userLogin(String username, String password) async {
-    SharedPreferences pref = await SharedPreferences.getInstance();
+    String query =
+        "SELECT * FROM users WHERE username = '$username' AND password = '$password'";
     try {
-      var databasePath = await getDatabasesPath();
-      String path = join(databasePath, dbUsers);
-      final db = await openDatabase(path);
+      List<Users> listUser = await db.getData<Users>(
+        'users',
+        query,
+        fromJsonUser,
+      );
 
-      List<Map> loginQuery = await db.rawQuery(
-          "SELECT * FROM users WHERE username = '$username' AND password = '$password'");
-
-      if (loginQuery.isEmpty) {
+      if (listUser.isEmpty) {
         return false;
       } else {
-        pref.setString(namePrefKey, loginQuery[0]['nama_lengkap']);
-        pref.setString(emailPrefKey, loginQuery[0]['email']);
-        pref.setString(levelPrefKey, loginQuery[0]['level']);
+        setUserData(listUser);
         return true;
       }
     } catch (e) {
@@ -40,4 +51,15 @@ class LoginController extends GetxController {
       return false;
     }
   }
+
+  void setUserData(List<Users> listUser) {
+    pref!.setString(namePrefKey, listUser[0].fullName);
+    pref!.setString(emailPrefKey, listUser[0].email);
+    pref!.setString(levelPrefKey, listUser[0].level);
+  }
+
+  Users fromJsonUser(Map<String, dynamic> json) {
+    return Users.fromJson(json);
+  }
+
 }

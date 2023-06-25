@@ -31,14 +31,11 @@ class DataSynchronization {
     ]);
     double progress = 0;
     try {
-      final data = await apiServices.fetchUserData();
+      users = await apiServices.fetchUserData();
 
       progress += 0.2;
       print('Progress: ${progress * 100}% - Data User fetched from API.');
 
-      data.forEach((element) {
-        users.add(Users.fromJson(element));
-      });
       var databasesPath = await getDatabasesPath();
       String path = join(databasesPath, dbUsers);
       final database = await openDatabase(
@@ -91,14 +88,10 @@ class DataSynchronization {
 
     double progress = 0;
     try {
-      final data = await apiServices.fetchMasterData();
+      masters = await apiServices.fetchMasterData();
 
       progress += 0.2;
       print('Progress: ${progress * 100}% - Data Master fetched from API.');
-
-      data.forEach((element) {
-        masters.add(Master.fromJson(element));
-      });
 
       var databasesPath = await getDatabasesPath();
       String path = join(databasesPath, dbMaster);
@@ -153,14 +146,10 @@ class DataSynchronization {
     ]);
     double progress = 0;
     try {
-      final data = await apiServices.fetchSalesData();
+      sales = await apiServices.fetchSalesData();
 
       progress += 0.2;
       print('Progress: ${progress * 100}% - Data Sales fetched from API.');
-
-      data.forEach((element) {
-        sales.add(Sales.fromJson(element));
-      });
 
       var databasesPath = await getDatabasesPath();
       String path = join(databasesPath, dbSales);
@@ -211,14 +200,10 @@ class DataSynchronization {
     ]);
     double progress = 0;
     try {
-      final data = await apiServices.fetchPurchasesData();
+      purchases = await apiServices.fetchPurchasesData();
 
       progress += 0.2;
       print('Progress: ${progress * 100}% - Data Purchases fetched from API.');
-
-      data.forEach((element) {
-        purchases.add(Purchases.fromJson(element));
-      });
 
       var databasesPath = await getDatabasesPath();
       String path = join(databasesPath, dbPurchases);

@@ -1,11 +1,11 @@
 import 'package:get/get.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
 import 'package:stockmobilesync/models/sales.dart';
-import 'package:stockmobilesync/utils/config.dart';
+import 'package:stockmobilesync/services/db_services.dart';
+import 'package:stockmobilesync/utils/helper.dart';
 import 'package:stockmobilesync/utils/log.dart';
 
 class SalesController extends GetxController {
+  final db = DbServices();
   RxList<Sales> sales = RxList();
   RxBool isSearch = false.obs;
   RxBool isLoading = false.obs;
@@ -27,13 +27,8 @@ class SalesController extends GetxController {
     isLoading.value = true;
     sales.clear();
     try {
-      var databasePath = await getDatabasesPath();
-      String path = join(databasePath, dbSales);
-      final db = await openDatabase(path);
-      List<Map<String,dynamic>> salesList = await db.rawQuery("SELECT * FROM sales");
-      for (var data in salesList) {
-        sales.add(Sales.fromJson(data));
-      }
+      String query = "SELECT * FROM sales";
+      sales.value = await getListData(query);
       isLoading.value = false;
     } catch(e) {
       Log.e('Get List Sales', e.toString());
@@ -41,19 +36,12 @@ class SalesController extends GetxController {
     }
   }
 
-  searchSales(String query) async {
+  searchSales(String keyword) async {
     isLoading.value = true;
     sales.clear();
     try {
-      var databasePath = await getDatabasesPath();
-      String path = join(databasePath, dbSales);
-      final db = await openDatabase(path);
-      List<Map<String,dynamic>> salesList = await db.rawQuery(
-          "SELECT * FROM sales WHERE nama LIKE '%$query%'");
-
-      for (var data in salesList) {
-        sales.add(Sales.fromJson(data));
-      }
+      String query = "SELECT * FROM sales WHERE nama LIKE '%$keyword%'";
+      sales.value = await getListData(query);
       isLoading.value = false;
     } catch(e) {
       Log.e('Search Sales', e.toString());
@@ -65,19 +53,21 @@ class SalesController extends GetxController {
     isLoading.value = true;
     sales.clear();
     try {
-      var databasePath = await getDatabasesPath();
-      String path = join(databasePath, dbSales);
-      final db = await openDatabase(path);
-      List<Map<String,dynamic>> salesList = await db.rawQuery(
-          "SELECT * FROM sales WHERE nama LIKE '%${searchQuery.value}%' AND tgl BETWEEN '$from' AND '$to'");
-
-      for (var data in salesList) {
-        sales.add(Sales.fromJson(data));
-      }
+      String query = "SELECT * FROM sales WHERE nama LIKE '%${searchQuery.value}%' AND tgl BETWEEN '$from' AND '$to'";
+      sales.value = await getListData(query);
       isLoading.value = false;
     } catch(e) {
       Log.e('Filter Sales', e.toString());
       isLoading.value = false;
     }
+  }
+
+  Future<List<Sales>> getListData(String query) async {
+    var data = await db.getData<Sales>(
+      'sales',
+      query,
+      Helper.fromJsonSales,
+    );
+    return data;
   }
 }

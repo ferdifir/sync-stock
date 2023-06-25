@@ -240,7 +240,7 @@ class PenjualanPage extends StatelessWidget {
   }
 
   void showDetailSales(Sales sal) {
-    bool state = sal.nmCustomer.length > 15;
+    bool state = sal.nmCustomer.length > 18;
     Get.dialog(
       WillPopScope(
         onWillPop: () async {

@@ -127,19 +127,19 @@ class MasterPage extends StatelessWidget {
                             Row(
                               children: [
                                 const Text('Satuan: '),
-                                Text(ctx.masters[index].sat),
+                                Text(ctx.masters[index].sat!),
                               ],
                             ),
                             Row(
                               children: [
                                 const Text('Pack: '),
-                                Text(ctx.masters[index].pak),
+                                Text(ctx.masters[index].pak!),
                               ],
                             ),
                             Row(
                               children: [
                                 const Text('Stock: '),
-                                Text(ctx.masters[index].akhirG),
+                                Text(ctx.masters[index].akhirG!),
                               ],
                             ),
                           ],
@@ -174,7 +174,8 @@ class MasterPage extends StatelessWidget {
 
   void showDetailProduct(MasterController ctx, int index) {
     String ket = ctx.masters[index].aktif == 1 ? 'Aktif' : 'Tidak Aktif';
-    String pack = ctx.masters[index].pak.isEmpty ? '-' : ctx.masters[index].pak;
+    bool pak = ctx.masters[index].pak == null && ctx.masters[index].pak!.isEmpty;
+    String pack = pak ? '-' : ctx.masters[index].pak!;
     bool state = ctx.level.value == 'admin';
     Get.dialog(
       WillPopScope(
@@ -185,7 +186,7 @@ class MasterPage extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: Text(ctx.masters[index].nama),
+          title: Text(ctx.masters[index].nama!),
           content: Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [

@@ -1,14 +1,14 @@
 class Master {
   final String kdBrg;
-  final String nama;
-  final String sat;
+  final String? nama;
+  final String? sat;
   final hjual;
   final hjualcr;
-  final String akhirG;
-  final String pak;
+  final String? akhirG;
+  final String? pak;
   final aktif;
   String? nmSupplier;
-  final String tglBeli;
+  final String? tglBeli;
 
   Master({
     required this.kdBrg,

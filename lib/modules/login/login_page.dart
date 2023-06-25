@@ -9,9 +9,12 @@ class LoginPage extends StatelessWidget {
 
   final formKey = GlobalKey<FormState>();
   final ctx = Get.find<LoginController>();
-  final usernameController = TextEditingController();
-  final passwordController = TextEditingController();
-  //text: '202cb962ac59075b964b07152d234b70'
+  final usernameController = TextEditingController(
+    text: 'admin',
+  );
+  final passwordController = TextEditingController(
+    text: '123',
+  );
 
   @override
   Widget build(BuildContext context) {
