@@ -45,7 +45,7 @@ class SalesController extends GetxController {
     isLoading.value = true;
     sales.clear();
     try {
-      String query = "SELECT * FROM sales WHERE nama LIKE '%$keyword%'";
+      String query = "SELECT * FROM sales WHERE nama LIKE '%$keyword%' ORDER BY tgl DESC";
       sales.value = await getListData(query);
       isLoading.value = false;
     } catch(e) {
@@ -58,7 +58,7 @@ class SalesController extends GetxController {
     isLoading.value = true;
     sales.clear();
     try {
-      String query = "SELECT * FROM sales WHERE nama LIKE '%${searchQuery.value}%' AND tgl BETWEEN '$from' AND '$to'";
+      String query = "SELECT * FROM sales WHERE nama LIKE '%${searchQuery.value}%' AND tgl BETWEEN '$from' AND '$to' ORDER BY tgl DESC";
       sales.value = await getListData(query);
       isLoading.value = false;
     } catch(e) {

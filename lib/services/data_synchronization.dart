@@ -1,243 +1,246 @@
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
+import 'package:stockmobilesync/models/master.dart';
+import 'package:stockmobilesync/models/purchases.dart';
+import 'package:stockmobilesync/models/sales.dart';
 import 'package:stockmobilesync/services/api_services.dart';
+import 'package:stockmobilesync/services/db_services.dart';
 import 'package:stockmobilesync/utils/helper.dart';
 import 'package:stockmobilesync/utils/log.dart';
 
-import '../models/master.dart';
-import '../models/purchases.dart';
-import '../models/sales.dart';
 import '../models/users.dart';
-import '../utils/config.dart';
 
 class DataSynchronization {
-  final apiServices = ApiServices();
+  final db = DbServices();
+  final api = ApiServices();
 
-  Future<bool> fetchUserData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<Users> users = [];
-    int databaseVersion = prefs.getInt(dbUserVersion) ?? 1;
-    String userQuery = Helper.queryCreateTable('users', [
-      'id INTEGER PRIMARY KEY',
-      'username TEXT',
-      'password TEXT',
-      'nama_lengkap TEXT',
-      'email TEXT',
-      'no_telp TEXT',
-      'level TEXT',
-      'blokir TEXT',
-      'id_session TEXT'
-    ]);
-    double progress = 0;
+  Future<bool> syncDataUser({
+    Function(String status, double progress)? callback,
+  }) async {
+    String query = "SELECT * FROM users";
     try {
-      users = await apiServices.fetchUserData();
-
-      progress += 0.2;
-      print('Progress: ${progress * 100}% - Data User fetched from API.');
-
-      var databasesPath = await getDatabasesPath();
-      String path = join(databasesPath, dbUsers);
-      final database = await openDatabase(
-        path,
-        version: databaseVersion,
-        onCreate: (db, version) {
-          db.execute(userQuery);
-        },
+      List<Users> users = await api.fetchUserData();
+      List<Users> dbUsers = await db.getData<Users>(
+        'users',
+        query,
+        Helper.fromJsonUser,
       );
 
-      for (var item in users) {
-        await database.insert('users', item.toJson());
+      Map<String, List<Users>> result = Helper.areUsersEqual(
+        api: users,
+        db: dbUsers,
+        callback: callback,
+      );
+
+      List<Users> updatedList = result['update']!;
+      List<Users> deletedList = result['delete']!;
+      List<Users> addedList = result['add']!;
+
+      bool update = false;
+      if (updatedList.isNotEmpty) {
+        update = await db.updateDataUser(updatedList,callback: callback);
+      } else {
+        callback?.call('Tidak ada data yang perlu diupdate', 1);
       }
+      Log.d('Update Data User', update.toString());
 
-      progress += 0.6;
-      print('Progress: ${progress * 100}% - Data User inserted to database.');
+      bool delete = false;
+      if (deletedList.isNotEmpty) {
+        delete = await db.deleteDataUser(deletedList,callback: callback);
+      } else {
+        callback?.call('Tidak ada data yang perlu dihapus', 1);
+      }
+      Log.d('Delete Data User', delete.toString());
 
-      int storedDataCount =
-          await database.query('users').then((value) => value.length);
-      bool isDataSameLength = storedDataCount == users.length;
-      await database.close();
+      bool add = false;
+      if (addedList.isNotEmpty) {
+        add = await db.insertData(
+          'users',
+          addedList.map((e) => e.toJson()).toList(),
+          callback: callback,
+        );
+      } else {
+        callback?.call('Tidak ada data yang perlu ditambahkan', 1);
+      }
+      Log.d('Add Data User', add.toString());
 
-      prefs.setInt(dbUserVersion, databaseVersion + 1);
-
-      progress += 0.2;
-      print('Progress: ${progress * 100}% - Database User version updated.');
-      return isDataSameLength;
+      callback?.call('Sinkronisasi data user selesai', 1);
+      return true;
     } catch (e) {
-      Log.e('Fetch User Data', '$e');
+      Log.d('Load Data User', e.toString());
       return false;
     }
   }
 
-  Future<bool> fetchMasterData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<Master> masters = [];
-    int databaseVersion = prefs.getInt(dbMasterVersion) ?? 1;
-    String masterQuery = Helper.queryCreateTable('master', [
-      'kd_brg TEXT PRIMARY KEY',
-      'nama TEXT',
-      'sat TEXT',
-      'hjual INTEGER',
-      'hjualcr INTEGER',
-      'akhir_g TEXT',
-      'pak TEXT',
-      'aktif INTEGER',
-      'nmsupplier TEXT',
-      'tglbeli DATE'
-    ]);
-
-    double progress = 0;
+  Future<bool> syncDataMaster({
+    Function(String status, double progress)? callback,
+  }) async {
+    String query = "SELECT * FROM master";
     try {
-      masters = await apiServices.fetchMasterData();
-
-      progress += 0.2;
-      print('Progress: ${progress * 100}% - Data Master fetched from API.');
-
-      var databasesPath = await getDatabasesPath();
-      String path = join(databasesPath, dbMaster);
-      final database = await openDatabase(
-        path,
-        version: databaseVersion,
-        onCreate: (db, version) {
-          db.execute(masterQuery);
-        },
+      List<Master> masters = await api.fetchMasterData();
+      List<Master> dbMasters = await db.getData<Master>(
+        'master',
+        query,
+        Helper.fromJsonMaster,
       );
 
-      for (var item in masters) {
-        await database.insert('master', item.toJson());
+      Map<String, List<Master>> result = Helper.areMastersEqual(
+        api: masters,
+        db: dbMasters,
+        callback: callback,
+      );
+
+      List<Master> updatedList = result['update']!;
+      List<Master> deletedList = result['delete']!;
+      List<Master> addedList = result['add']!;
+
+      bool update = false;
+      if (updatedList.isNotEmpty) {
+        update = await db.updateDataMaster(updatedList,callback: callback);
+      } else {
+        callback?.call('Tidak ada data yang perlu diupdate', 1);
       }
+      Log.d('Update Data Master', update.toString());
 
-      progress += 0.6;
-      print('Progress: ${progress * 100}% - Data Master inserted to database.');
+      bool delete = false;
+      if (deletedList.isNotEmpty) {
+        delete = await db.deleteDataMaster(deletedList,callback: callback);
+      } else {
+        callback?.call('Tidak ada data yang perlu dihapus', 1);
+      }
+      Log.d('Delete Data Master', delete.toString());
 
-      int storedDataCount =
-          await database.query('master').then((value) => value.length);
-      bool isDataSameLength = storedDataCount == masters.length;
-      await database.close();
+      bool add = false;
+      if (addedList.isNotEmpty) {
+        add = await db.insertData(
+          'master',
+          addedList.map((e) => e.toJson()).toList(),
+          callback: callback,
+        );
+      } else {
+        callback?.call('Tidak ada data yang perlu ditambahkan', 1);
+      }
+      Log.d('Add Data Master', add.toString());
 
-      prefs.setInt(dbMasterVersion, databaseVersion + 1);
-
-      progress += 0.2;
-      print('Progress: ${progress * 100}% - Database Master version updated.');
-      return isDataSameLength;
+      callback?.call('Sinkronisasi data master selesai', 1);
+      return true;
     } catch (e) {
-      Log.e('Fetch Master Data', '$e');
+      Log.d('Load Data Master', e.toString());
       return false;
     }
   }
 
-  Future<bool> fetchSalesData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<Sales> sales = [];
-    int databaseVersion = prefs.getInt(dbSalesVersion) ?? 1;
-    String salesQuery = Helper.queryCreateTable('sales', [
-      'idsales INTEGER PRIMARY KEY AUTOINCREMENT',
-      'nmcustomer TEXT',
-      'nama TEXT',
-      'sat TEXT',
-      'qty TEXT',
-      'hjual TEXT',
-      'ecer INTEGER',
-      'pak TEXT',
-      'nota TEXT',
-      'tgl DATE',
-      'hbeli TEXT',
-      'kdsales TEXT'
-    ]);
-    double progress = 0;
+  Future<bool> syncDataSales({
+    Function(String status, double progress)? callback,
+  }) async {
+    String query = "SELECT * FROM sales";
     try {
-      sales = await apiServices.fetchSalesData();
-
-      progress += 0.2;
-      print('Progress: ${progress * 100}% - Data Sales fetched from API.');
-
-      var databasesPath = await getDatabasesPath();
-      String path = join(databasesPath, dbSales);
-      final database = await openDatabase(
-        path,
-        version: 1,
-        onCreate: (db, version) {
-          db.execute(salesQuery);
-        },
+      List<Sales> sales = await api.fetchSalesData();
+      List<Sales> dbSales = await db.getData<Sales>(
+        'sales',
+        query,
+        Helper.fromJsonSales,
       );
 
-      for (var item in sales) {
-        await database.insert('sales', item.toJson());
-        print('Menambahkan data ${item.nama} ke database sales');
+      Map<String, List<Sales>> result = Helper.areSalesEqual(
+        api: sales,
+        db: dbSales,
+        callback: callback,
+      );
+
+      List<Sales> updatedList = result['update']!;
+      List<Sales> deletedList = result['delete']!;
+      List<Sales> addedList = result['add']!;
+
+      bool update = false;
+      if (updatedList.isNotEmpty) {
+        update = await db.updateDataSales(updatedList,callback: callback);
+      } else {
+        callback?.call('Tidak ada data yang perlu diupdate', 1);
       }
+      Log.d('Update Data Sales', update.toString());
 
-      progress += 0.6;
-      print('Progress: ${progress * 100}% - Data Sales inserted to database.');
+      bool delete = false;
+      if (deletedList.isNotEmpty) {
+        delete = await db.deleteDataSales(deletedList,callback: callback);
+      } else {
+        callback?.call('Tidak ada data yang perlu dihapus', 1);
+      }
+      Log.d('Delete Data Sales', delete.toString());
 
-      int storedDataCount =
-          await database.query('sales').then((value) => value.length);
-      bool isDataSameLength = storedDataCount == sales.length;
-      await database.close();
+      bool add = false;
+      if (addedList.isNotEmpty) {
+        add = await db.insertData(
+          'sales',
+          addedList.map((e) => e.toJson()).toList(),
+          callback: callback,
+        );
+      } else {
+        callback?.call('Tidak ada data yang perlu ditambahkan', 1);
+      }
+      Log.d('Add Data Sales', add.toString());
 
-      prefs.setInt(dbSalesVersion, databaseVersion + 1);
-
-      progress += 0.2;
-      print('Progress: ${progress * 100}% - Database Sales version updated.');
-      return isDataSameLength;
+      callback?.call('Sinkronisasi data sales selesai', 1);
+      return true;
     } catch (e) {
-      Log.e('Fetch Sales Data', '$e');
+      Log.d('Load Data Sales', e.toString());
       return false;
     }
   }
 
-  Future<bool> fetchPurchasesData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<Purchases> purchases = [];
-    int databaseVersion = prefs.getInt(dbPurchasesVersion) ?? 1;
-    String purchasesQuery = Helper.queryCreateTable('purchases', [
-      'idtranst INTEGER PRIMARY KEY',
-      'nama TEXT',
-      'tgl DATE',
-      'qty TEXT',
-      'hbeli TEXT',
-      'hjualcr INTEGER',
-      'nmsupplier TEXT'
-    ]);
-    double progress = 0;
+  Future<bool> syncDataPurchases({
+    Function(String status, double progress)? callback,
+  }) async {
+    String query = "SELECT * FROM purchases";
     try {
-      purchases = await apiServices.fetchPurchasesData();
-
-      progress += 0.2;
-      print('Progress: ${progress * 100}% - Data Purchases fetched from API.');
-
-      var databasesPath = await getDatabasesPath();
-      String path = join(databasesPath, dbPurchases);
-      final database = await openDatabase(
-        path,
-        version: 1,
-        onCreate: (db, version) {
-          db.execute(purchasesQuery);
-        },
+      List<Purchases> purchases = await api.fetchPurchasesData();
+      List<Purchases> dbPurchases = await db.getData<Purchases>(
+        'purchases',
+        query,
+        Helper.fromJsonPurchases,
       );
 
-      for (var item in purchases) {
-        await database.insert('purchases', item.toJson());
+      Map<String, List<Purchases>> result = Helper.arePurchasesEqual(
+        api: purchases,
+        db: dbPurchases,
+        callback: callback,
+      );
+
+      List<Purchases> updatedList = result['update']!;
+      List<Purchases> deletedList = result['delete']!;
+      List<Purchases> addedList = result['add']!;
+
+      bool update = false;
+      if (updatedList.isNotEmpty) {
+        update = await db.updateDataPurchases(updatedList,callback: callback);
+      } else {
+        callback?.call('Tidak ada data yang perlu diupdate', 1);
       }
+      Log.d('Update Data Purchases', update.toString());
 
-      progress += 0.6;
-      print(
-          'Progress: ${progress * 100}% - Data Purchases inserted to database.');
+      bool delete = false;
+      if (deletedList.isNotEmpty) {
+        delete = await db.deleteDataPurchases(deletedList,callback: callback);
+      } else {
+        callback?.call('Tidak ada data yang perlu dihapus', 1);
+      }
+      Log.d('Delete Data Purchases', delete.toString());
 
-      int storedDataCount =
-          await database.query('purchases').then((value) => value.length);
-      bool isDataSameLength = storedDataCount == purchases.length;
-      await database.close();
+      bool add = false;
+      if (addedList.isNotEmpty) {
+        add = await db.insertData(
+          'purchases',
+          addedList.map((e) => e.toJson()).toList(),
+          callback: callback,
+        );
+      } else {
+        callback?.call('Tidak ada data yang perlu ditambahkan', 1);
+      }
+      Log.d('Add Data Purchases', add.toString());
 
-      prefs.setInt(dbPurchasesVersion, databaseVersion + 1);
-
-      progress += 0.2;
-      print(
-          'Progress: ${progress * 100}% - Database Purchases version updated.');
-      return isDataSameLength;
+      callback?.call('Sinkronisasi data purchases selesai', 1);
+      return true;
     } catch (e) {
-      Log.e('Fetch Purchases Data', '$e');
+      Log.d('Load Data Purchases', e.toString());
       return false;
     }
   }
-
 }

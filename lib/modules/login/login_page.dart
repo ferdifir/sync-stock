@@ -197,10 +197,10 @@ class LoginPage extends StatelessWidget {
                               onPressed: () async {
                                 if (formKey.currentState!.validate()) {
                                   ctx.setRememberMe();
-                                  bool successLogin = await ctx.userLogin(
+                                  String? successLogin = await ctx.userLogin(
                                       usernameController.text,
                                       passwordController.text);
-                                  if (successLogin) {
+                                  if (successLogin == 'Login berhasil') {
                                     Get.offNamed(AppRoutes.DASHBOARD);
                                   } else {
                                     Get.dialog(AlertDialog(
@@ -208,8 +208,7 @@ class LoginPage extends StatelessWidget {
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       title: const Text('Warning'),
-                                      content: const Text(
-                                          'Username dan Password ada yang salah'),
+                                      content: Text(successLogin ?? 'Terjadi kesalahan',),
                                       actions: [
                                         TextButton(
                                           onPressed: () {
@@ -249,7 +248,6 @@ class LoginPage extends StatelessWidget {
               top: 24,
               right: 20,
               child: Container(
-                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: Colors.grey,
                   borderRadius: BorderRadius.circular(20)
@@ -278,7 +276,7 @@ class LoginPage extends StatelessWidget {
                         ),
                       ),
                     ));
-                    ctx.loadDataUser().then((value) => Get.back());
+                    ctx.syncData.syncDataUser().then((value) => Get.back());
                   },
                   icon: const Icon(Icons.sync),
                 ),

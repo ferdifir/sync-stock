@@ -1,9 +1,10 @@
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:stockmobilesync/models/users.dart';
+import 'package:stockmobilesync/services/data_synchronization.dart';
 import 'package:stockmobilesync/services/db_services.dart';
 import 'package:stockmobilesync/utils/config.dart';
-import 'package:stockmobilesync/utils/log.dart';
+import 'package:stockmobilesync/utils/helper.dart';
 
 import '../../services/api_services.dart';
 
@@ -11,6 +12,7 @@ class LoginController extends GetxController {
   SharedPreferences? pref;
   final db = DbServices();
   final api = ApiServices();
+  final syncData = DataSynchronization();
   RxBool rememberMe = false.obs;
   RxBool showPassword = false.obs;
 
@@ -32,41 +34,27 @@ class LoginController extends GetxController {
     showPassword.value = !showPassword.value;
   }
 
-  Future<bool> userLogin(String username, String password) async {
+  Future<String?> userLogin(String username, String password) async {
     String query =
         "SELECT * FROM users WHERE username = '$username' AND password = '$password'";
     try {
       List<Users> listUser = await db.getData<Users>(
         'users',
         query,
-        fromJsonUser,
+        Helper.fromJsonUser,
       );
 
       if (listUser.isEmpty) {
-        return false;
+        return 'Username atau password yang anda masukkan salah';
+      } else if (listUser[0].block == 'Y') {
+        return 'Anda tidak dapat login karena akun anda diblokir';
       } else {
         setUserData(listUser);
-        return true;
+        return 'Login berhasil';
       }
     } catch (e) {
       printError(info: e.toString());
-      return false;
-    }
-  }
-
-  Future<bool> loadDataUser() async {
-    try {
-      db.openDB();
-      List<Users> users = await api.fetchUserData();
-      db.insertData(
-        'users',
-        users.map((e) => e.toJson()).toList(),
-      );
-
-      return true;
-    } catch (e) {
-      Log.d('Load Data User', e.toString());
-      return false;
+      return null;
     }
   }
 
@@ -75,9 +63,4 @@ class LoginController extends GetxController {
     pref!.setString(emailPrefKey, listUser[0].email);
     pref!.setString(levelPrefKey, listUser[0].level);
   }
-
-  Users fromJsonUser(Map<String, dynamic> json) {
-    return Users.fromJson(json);
-  }
-
 }

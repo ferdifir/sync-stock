@@ -4,13 +4,11 @@ import 'package:stockmobilesync/models/users.dart';
 import 'package:stockmobilesync/services/api_services.dart';
 import 'package:stockmobilesync/services/db_services.dart';
 import 'package:stockmobilesync/utils/config.dart';
-import 'package:stockmobilesync/services/data_synchronization.dart';
 import 'package:stockmobilesync/utils/log.dart';
 
 class SplashController extends GetxController {
   final api = ApiServices();
   final db = DbServices();
-  final syncData = DataSynchronization();
   RxBool isFirstTime = true.obs;
   RxBool isRemember = false.obs;
 

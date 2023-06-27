@@ -11,6 +11,7 @@ class MasterController extends GetxController {
   RxList<Master> masters = RxList();
   RxBool isSearch = false.obs;
   RxBool isLoading = false.obs;
+  RxBool isAktif = true.obs;
   RxString level = RxString('');
   SharedPreferences? pref;
 
@@ -30,11 +31,27 @@ class MasterController extends GetxController {
     isSearch.value = !isSearch.value;
   }
 
+  toggleAktif(bool value) {
+    isAktif.value = value;
+  }
+
+  showListAktif() {
+    var data = masters;
+    if (isAktif.value) {
+      masters.value = masters.where((element) => element.aktif == 1).toList();
+    } else {
+      masters = data;
+    }
+  }
+
   getListMaster() async {
     isLoading.value = true;
     masters.clear();
     try {
       String query = "SELECT * FROM master";
+      if (isAktif.value) {
+        query += " WHERE aktif = 1";
+      }
       masters.value = await getListData(query);
       isLoading.value = false;
     } catch (e) {
@@ -57,6 +74,9 @@ class MasterController extends GetxController {
     masters.clear();
     try {
       String query = "SELECT * FROM master WHERE nama LIKE '%$keyword%'";
+      if (isAktif.value) {
+        query += " AND aktif = 1";
+      }
       masters.value = await getListData(query);
       isLoading.value = false;
     } catch (e) {

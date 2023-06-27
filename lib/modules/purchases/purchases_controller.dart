@@ -32,7 +32,7 @@ class PurchasesController extends GetxController {
     isLoading.value = true;
     purchases.clear();
     try {
-      String query = "SELECT * FROM purchases";
+      String query = "SELECT * FROM purchases ORDER BY tgl DESC";
       purchases.value = await getListData(query);
       isLoading.value = false;
     } catch(e) {
@@ -45,7 +45,7 @@ class PurchasesController extends GetxController {
     isLoading.value = true;
     purchases.clear();
     try {
-      String query = "SELECT * FROM purchases WHERE nama LIKE '%$keyword%'";
+      String query = "SELECT * FROM purchases WHERE nama LIKE '%$keyword%' ORDER BY tgl DESC";
       purchases.value = await getListData(query);
       isLoading.value = false;
     } catch(e) {
@@ -58,7 +58,7 @@ class PurchasesController extends GetxController {
     isLoading.value = true;
     purchases.clear();
     try {
-      String query = "SELECT * FROM purchases WHERE nama LIKE '%${searchQuery.value}%' AND tgl BETWEEN '$from' AND '$to'";
+      String query = "SELECT * FROM purchases WHERE nama LIKE '%${searchQuery.value}%' AND tgl BETWEEN '$from' AND '$to' ORDER BY tgl DESC";
       purchases.value = await getListData(query);
       isLoading.value = false;
     } catch(e) {

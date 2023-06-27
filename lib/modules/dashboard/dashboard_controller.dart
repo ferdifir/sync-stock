@@ -13,7 +13,7 @@ class DashboardController extends GetxController {
   SharedPreferences? pref;
   final api = ApiServices();
   final db = DbServices();
-  final dataSync = DataSynchronization();
+  final synData = DataSynchronization();
 
   RxString name = RxString('');
   RxString email = RxString('');
@@ -134,42 +134,17 @@ class DashboardController extends GetxController {
 
   Future<bool> syncData(Function(String, double) callback) async {
     callback('Memulai Sinkronisasi', 0.001);
-    List<Master> masterApi = await api.fetchMasterData();
-    callback('Mengambil data Produk dari API', 0.001);
-    List<Master> masterDb = await getMaster(false);
-    List<Purchases> purchasesApi = await api.fetchPurchasesData();
-    callback('Mengambil Data Pembelian dari API', 0.002);
-    List<Purchases> purchasesDb = await getPurchases(false);
-    List<Sales> salesApi = await api.fetchSalesData();
-    callback('Mengambil Data Penjualan dari API', 0.003);
-    List<Sales> salesDb = await getSales(false);
+    bool userSync = await synData.syncDataUser(callback: callback);
+    bool masterSync = await synData.syncDataMaster(callback: callback);
+    bool salesSync = await synData.syncDataSales(callback: callback);
+    bool purchasesSync = await synData.syncDataPurchases(callback: callback);
 
-    bool isMasterUpdated = Helper.areListsEqual(api: masterApi, db: masterDb);
-    callback('Mengecek data Produk', 0.004);
-    bool isSalesUpdated = Helper.areListsEqual(api: purchasesApi, db: purchasesDb);
-    callback('Mengecek data penjualan', 0.005);
-    bool isPurchasesUpdated = Helper.areListsEqual(api: salesApi, db: salesDb);
-    callback('Mengecek data pembelian', 0.006);
-
-    bool masterSync = false;
-    if (!isMasterUpdated) {
-      masterSync = await loadDataMaster(callback);
+    if (userSync && masterSync && salesSync && purchasesSync) {
+      pref?.setBool(firstTimeSync, false);
+      return true;
+    } else {
+      return false;
     }
-    print(masterSync);
-
-    bool salesSync = false;
-    if (!isSalesUpdated) {
-      salesSync = await loadDataSales(callback);
-    }
-    print(salesSync);
-
-    bool purchaseSync = false;
-    if (!isPurchasesUpdated) {
-      purchaseSync = await loadDataPurchases(callback);
-    }
-    print(purchaseSync);
-
-    return true;
   }
 
 }

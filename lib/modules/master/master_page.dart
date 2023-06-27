@@ -30,6 +30,7 @@ class MasterPage extends StatelessWidget {
                         ),
                         onChanged: (value) {
                           ctx.searchMaster(value);
+                          ctx.showListAktif();
                         },
                       )
                     : const Text('Data Master');
@@ -49,6 +50,27 @@ class MasterPage extends StatelessWidget {
                   icon: Icon(
                     ctx.isSearch.value ? Icons.close : Icons.search,
                   ),
+                ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.grey,
+                ),
+                padding: const EdgeInsets.only(right: 10),
+                margin: const EdgeInsets.all(10),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Obx(() => Checkbox(
+                          value: ctx.isAktif.value,
+                          onChanged: (value) {
+                            ctx.toggleAktif(value!);
+                            ctx.getListMaster();
+                          },
+                        )),
+                    const Text('Aktif'),
+                  ],
                 ),
               ),
             ],
@@ -174,7 +196,8 @@ class MasterPage extends StatelessWidget {
 
   void showDetailProduct(MasterController ctx, int index) {
     String ket = ctx.masters[index].aktif == 1 ? 'Aktif' : 'Tidak Aktif';
-    bool pak = ctx.masters[index].pak == null && ctx.masters[index].pak!.isEmpty;
+    bool pak =
+        ctx.masters[index].pak == null && ctx.masters[index].pak!.isEmpty;
     String pack = pak ? '-' : ctx.masters[index].pak!;
     bool state = ctx.level.value == 'admin';
     Get.dialog(
@@ -219,7 +242,9 @@ class MasterPage extends StatelessWidget {
                   Text(': ${ctx.masters[index].sat}'),
                   Text(': $pack'),
                   Text(': ${ctx.masters[index].akhirG}'),
-                  state ? Text(': ${ctx.masters[index].nmSupplier ?? '-'}') : const SizedBox(),
+                  state
+                      ? Text(': ${ctx.masters[index].nmSupplier ?? '-'}')
+                      : const SizedBox(),
                   Text(': $ket'),
                 ],
               ),
