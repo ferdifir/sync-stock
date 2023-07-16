@@ -1,7 +1,10 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:stockmobilesync/models/sales_data.dart';
 import 'package:stockmobilesync/modules/dashboard/dashboard_controller.dart';
 import 'package:stockmobilesync/modules/dashboard/progress_dialog.dart';
+import 'package:stockmobilesync/modules/dashboard/sales_chart.dart';
 import 'package:stockmobilesync/routes/app_routes.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -26,57 +29,11 @@ class DashboardPage extends StatelessWidget {
                       top: 10,
                       left: 10,
                       right: 10,
-                      child: Row(
-                        children: <Widget>[
-                          const CircleAvatar(
-                            radius: 24,
-                            backgroundImage: AssetImage('assets/user.png'),
-                          ),
-                          const SizedBox(width: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Obx(() => Text(
-                                    ctx.name.isEmpty
-                                        ? 'Loading...'
-                                        : ctx.name.value,
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  )),
-                              Obx(() => Text(
-                                    ctx.email.isEmpty
-                                        ? 'Loading...'
-                                        : ctx.email.value,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  )),
-                            ],
-                          ),
-                          const Spacer(),
-                          Container(
-                            margin: const EdgeInsets.only(left: 10),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Obx(() => Text(
-                                  ctx.level.isEmpty
-                                      ? 'Loading...'
-                                      : ctx.level.value,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                )),
-                          )
+                      child: Column(
+                        children: [
+                          customAppBar(ctx),
+                          const SizedBox(height: 40),
+                          SalesChart()
                         ],
                       ),
                     ),
@@ -89,170 +46,229 @@ class DashboardPage extends StatelessWidget {
         });
   }
 
-  Positioned contentDashboard(
+  Row customAppBar(DashboardController ctx) {
+    return Row(
+      children: <Widget>[
+        const CircleAvatar(
+          radius: 24,
+          backgroundImage: AssetImage('assets/user.png'),
+        ),
+        const SizedBox(width: 10),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Obx(() => Text(
+                  ctx.name.isEmpty ? 'Loading...' : ctx.name.value,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )),
+            Obx(() => Text(
+                  ctx.email.isEmpty ? 'Loading...' : ctx.email.value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )),
+          ],
+        ),
+        const Spacer(),
+        Container(
+          margin: const EdgeInsets.only(left: 10),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 5,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Obx(() => Text(
+                ctx.level.isEmpty ? 'Loading...' : ctx.level.value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              )),
+        )
+      ],
+    );
+  }
+
+  contentDashboard(
     double height,
     BuildContext context,
     DashboardController ctx,
   ) {
-    return Positioned(
-      top: 70,
-      left: 0,
-      right: 0,
-      child: Container(
-        height: height - 70,
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(50),
-            topRight: Radius.circular(50),
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            Container(
-              width: 150,
-              height: 6,
-              margin: const EdgeInsets.only(top: 20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(3),
+    return Positioned.fill(
+      child: DraggableScrollableSheet(
+        maxChildSize: 0.9,
+        initialChildSize: 0.9,
+        minChildSize: 0.9,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(50),
+                topRight: Radius.circular(50),
               ),
             ),
-            const SizedBox(height: 30),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                buildItemDashboard(
-                  image: 'assets/1.png',
-                  title: 'Master Produk',
-                  onTap: () async {
-                    var isAvail = await ctx.checkDataMaster();
-                    if (isAvail) {
-                      Get.toNamed(AppRoutes.MASTER);
-                    } else {
-                      //showLoadingDialog('Memuat Data Produk untuk pertama kali');
-                      showProgressDialog();
-                      ctx.loadDataMaster((status, progress){
-                        ctx.updateStatusProgress(status, progress);
-                      }).then((value) {
-                        Get.back();
-                        if (value) {
-                          Get.toNamed(AppRoutes.MASTER);
-                        }
-                      });
-                    }
-                  },
-                ),
-                buildItemDashboard(
-                  image: 'assets/2.png',
-                  title: 'Data Pembelian',
-                  onTap: () async {
-                    bool isAvail = await ctx.checkDataPurchases();
-                    if (isAvail) {
-                      Get.toNamed(AppRoutes.PURCHASES);
-                    } else {
-                      //showLoadingDialog('Memuat Data Pembelian untuk pertama kali');
-                      showProgressDialog();
-                      ctx.loadDataPurchases((status, progress){
-                        ctx.updateStatusProgress(status, progress);
-                      }).then((value) {
-                        Get.back();
-                        if (value) {
-                          Get.toNamed(AppRoutes.PURCHASES);
-                        }
-                      });
-                    }
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                buildItemDashboard(
-                  image: 'assets/4.png',
-                  title: 'Data Penjualan',
-                  onTap: () async {
-                    bool isAvail = await ctx.checkDataSales();
-                    if (isAvail) {
-                      Get.toNamed(AppRoutes.SALES);
-                    } else {
-                      //showLoadingDialog('Memuat Data Penjualan untuk pertama kali');
-                      showProgressDialog();
-                      ctx.loadDataSales((status, progress){
-                        ctx.updateStatusProgress(status, progress);
-                      }).then((value) {
-                        Get.back();
-                        if (value) {
-                          Get.toNamed(AppRoutes.SALES);
-                        }
-                      });
-                    }
-                  },
-                ),
-                buildItemDashboard(
-                  image: 'assets/3.png',
-                  title: 'Sinkronisasi Data',
-                  onTap: () {
-                    // showLoadingDialog('Sinkronisasi seluruh data...');
-                    showSynchronizationAlert(() {
-                      Get.back();
-                      showProgressDialog();
-                      ctx.syncData((status, progress){
-                        ctx.updateStatusProgress(status, progress);
-                      }).then((value) {
-                        Get.back();
-                        showFinishSyncDialog(value);
-                      });
-                    });
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            buildItemDashboard(
-              image: 'assets/5.png',
-              title: 'Keluar',
-              onTap: () {
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) {
-                    return WillPopScope(
-                      onWillPop: () async => false,
-                      child: AlertDialog(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        title: const Text('Konfirmasi'),
-                        content: const Text(
-                          'Apakah anda yakin ingin keluar?',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () {
+            child: SingleChildScrollView(
+              controller: scrollController,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Container(
+                    width: 150,
+                    height: 6,
+                    margin: const EdgeInsets.only(top: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      buildItemDashboard(
+                        image: 'assets/1.png',
+                        title: 'Master Produk',
+                        onTap: () async {
+                          var isAvail = await ctx.checkDataMaster();
+                          if (isAvail) {
+                            Get.toNamed(AppRoutes.MASTER,arguments: ctx.sessionId.value,);
+                          } else {
+                            //showLoadingDialog('Memuat Data Produk untuk pertama kali');
+                            showProgressDialog();
+                            ctx.loadDataMaster((status, progress) {
+                              ctx.updateStatusProgress(status, progress);
+                            }).then((value) {
                               Get.back();
-                            },
-                            child: const Text('Tidak'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Get.offAllNamed(AppRoutes.LOGIN);
-                            },
-                            child: const Text('Ya'),
-                          ),
-                        ],
+                              if (value) {
+                                Get.toNamed(
+                                  AppRoutes.MASTER,
+                                  arguments: ctx.sessionId.value,
+                                );
+                              }
+                            });
+                          }
+                        },
                       ),
-                    );
-                  },
-                );
-              },
+                      buildItemDashboard(
+                        image: 'assets/2.png',
+                        title: 'Data Pembelian',
+                        onTap: () async {
+                          bool isAvail = await ctx.checkDataPurchases();
+                          if (isAvail) {
+                            Get.toNamed(AppRoutes.PURCHASES,arguments: ctx.sessionId.value,);
+                          } else {
+                            //showLoadingDialog('Memuat Data Pembelian untuk pertama kali');
+                            showProgressDialog();
+                            ctx.loadDataPurchases((status, progress) {
+                              ctx.updateStatusProgress(status, progress);
+                            }).then((value) {
+                              Get.back();
+                              if (value) {
+                                Get.toNamed(AppRoutes.PURCHASES,arguments: ctx.sessionId.value,);
+                              }
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      buildItemDashboard(
+                        image: 'assets/4.png',
+                        title: 'Data Penjualan',
+                        onTap: () async {
+                          bool isAvail = await ctx.checkDataSales();
+                          if (isAvail) {
+                            Get.toNamed(AppRoutes.SALES,arguments: ctx.sessionId.value,);
+                          } else {
+                            //showLoadingDialog('Memuat Data Penjualan untuk pertama kali');
+                            showProgressDialog();
+                            ctx.loadDataSales((status, progress) {
+                              ctx.updateStatusProgress(status, progress);
+                            }).then((value) {
+                              Get.back();
+                              if (value) {
+                                Get.toNamed(AppRoutes.SALES,arguments: ctx.sessionId.value,);
+                              }
+                            });
+                          }
+                        },
+                      ),
+                      buildItemDashboard(
+                        image: 'assets/3.png',
+                        title: 'Sinkronisasi Data',
+                        onTap: () {
+                          // showLoadingDialog('Sinkronisasi seluruh data...');
+                          showSynchronizationAlert(() {
+                            Get.back();
+                            showProgressDialog();
+                            ctx.synchronizeData((status, progress) {
+                              ctx.updateStatusProgress(status, progress);
+                            }).then((value) {
+                              Get.back();
+                              showFinishSyncDialog(value);
+                            });
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  buildItemDashboard(
+                    image: 'assets/5.png',
+                    title: 'Keluar',
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) {
+                          return WillPopScope(
+                            onWillPop: () async => false,
+                            child: AlertDialog(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              title: const Text('Konfirmasi'),
+                              content: const Text(
+                                'Apakah anda yakin ingin keluar?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Get.back();
+                                  },
+                                  child: const Text('Tidak'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Get.offAllNamed(AppRoutes.LOGIN);
+                                  },
+                                  child: const Text('Ya'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -356,40 +372,44 @@ class DashboardPage extends StatelessWidget {
   }
 
   void showFinishSyncDialog(bool value) {
-    Get.dialog(
-        Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+    Get.dialog(Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 30),
+            Icon(
+              value ? Icons.check_circle : Icons.warning_amber_sharp,
+              color: value ? Colors.green : Colors.red,
+              size: 100,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              value ? 'Data berhasil disinkronkan' : 'Data gagal disinkronkan',
+              style: const TextStyle(
+                fontSize: 20,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Icon(
-                  value ? Icons.check_circle : Icons.warning_amber_sharp,
-                  color: value ? Colors.green : Colors.red,
-                  size: 40,
-                ),
-                const SizedBox(height: 10),
-                Text(value ? 'Data berhasil disinkronkan' : 'Data gagal disinkronkan'),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: (){
-                        Get.offAllNamed(AppRoutes.DASHBOARD);
-                      }, 
-                      child: const Text('OK'),
-                    )
-                  ],
+                TextButton(
+                  onPressed: () {
+                    Get.back();
+                  },
+                  child: const Text('OK'),
                 )
               ],
-            ),
-          ),
-        )
-    );
+            )
+          ],
+        ),
+      ),
+    ));
   }
 }

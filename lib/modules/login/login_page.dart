@@ -208,7 +208,9 @@ class LoginPage extends StatelessWidget {
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       title: const Text('Warning'),
-                                      content: Text(successLogin ?? 'Terjadi kesalahan',),
+                                      content: Text(
+                                        successLogin ?? 'Terjadi kesalahan',
+                                      ),
                                       actions: [
                                         TextButton(
                                           onPressed: () {
@@ -249,9 +251,8 @@ class LoginPage extends StatelessWidget {
               right: 20,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.grey,
-                  borderRadius: BorderRadius.circular(20)
-                ),
+                    color: Colors.grey,
+                    borderRadius: BorderRadius.circular(20)),
                 child: IconButton(
                   onPressed: () {
                     Get.dialog(WillPopScope(
@@ -276,7 +277,9 @@ class LoginPage extends StatelessWidget {
                         ),
                       ),
                     ));
-                    ctx.syncData.syncDataUser().then((value) => Get.back());
+                    ctx.syncData
+                        .syncDataUser(callback: (s, p) {})
+                        .then((value) => Get.back());
                   },
                   icon: const Icon(Icons.sync),
                 ),

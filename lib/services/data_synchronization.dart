@@ -13,7 +13,7 @@ class DataSynchronization {
   final api = ApiServices();
 
   Future<bool> syncDataUser({
-    Function(String status, double progress)? callback,
+    required Function(String status, double progress) callback,
   }) async {
     String query = "SELECT * FROM users";
     try {
@@ -38,7 +38,7 @@ class DataSynchronization {
       if (updatedList.isNotEmpty) {
         update = await db.updateDataUser(updatedList,callback: callback);
       } else {
-        callback?.call('Tidak ada data yang perlu diupdate', 1);
+        callback('Tidak ada data yang perlu diupdate', 1);
       }
       Log.d('Update Data User', update.toString());
 
@@ -46,7 +46,7 @@ class DataSynchronization {
       if (deletedList.isNotEmpty) {
         delete = await db.deleteDataUser(deletedList,callback: callback);
       } else {
-        callback?.call('Tidak ada data yang perlu dihapus', 1);
+        callback('Tidak ada data yang perlu dihapus', 1);
       }
       Log.d('Delete Data User', delete.toString());
 
@@ -58,11 +58,11 @@ class DataSynchronization {
           callback: callback,
         );
       } else {
-        callback?.call('Tidak ada data yang perlu ditambahkan', 1);
+        callback('Tidak ada data yang perlu ditambahkan', 1);
       }
       Log.d('Add Data User', add.toString());
 
-      callback?.call('Sinkronisasi data user selesai', 1);
+      callback('Sinkronisasi data user selesai', 1);
       return true;
     } catch (e) {
       Log.d('Load Data User', e.toString());
@@ -71,7 +71,7 @@ class DataSynchronization {
   }
 
   Future<bool> syncDataMaster({
-    Function(String status, double progress)? callback,
+    required Function(String status, double progress) callback,
   }) async {
     String query = "SELECT * FROM master";
     try {
@@ -96,7 +96,7 @@ class DataSynchronization {
       if (updatedList.isNotEmpty) {
         update = await db.updateDataMaster(updatedList,callback: callback);
       } else {
-        callback?.call('Tidak ada data yang perlu diupdate', 1);
+        callback('Tidak ada data yang perlu diupdate', 1);
       }
       Log.d('Update Data Master', update.toString());
 
@@ -104,7 +104,7 @@ class DataSynchronization {
       if (deletedList.isNotEmpty) {
         delete = await db.deleteDataMaster(deletedList,callback: callback);
       } else {
-        callback?.call('Tidak ada data yang perlu dihapus', 1);
+        callback('Tidak ada data yang perlu dihapus', 1);
       }
       Log.d('Delete Data Master', delete.toString());
 
@@ -116,11 +116,11 @@ class DataSynchronization {
           callback: callback,
         );
       } else {
-        callback?.call('Tidak ada data yang perlu ditambahkan', 1);
+        callback('Tidak ada data yang perlu ditambahkan', 1);
       }
       Log.d('Add Data Master', add.toString());
 
-      callback?.call('Sinkronisasi data master selesai', 1);
+      callback('Sinkronisasi data master selesai', 1);
       return true;
     } catch (e) {
       Log.d('Load Data Master', e.toString());
@@ -129,7 +129,7 @@ class DataSynchronization {
   }
 
   Future<bool> syncDataSales({
-    Function(String status, double progress)? callback,
+    required Function(String status, double progress) callback,
   }) async {
     String query = "SELECT * FROM sales";
     try {
@@ -154,7 +154,7 @@ class DataSynchronization {
       if (updatedList.isNotEmpty) {
         update = await db.updateDataSales(updatedList,callback: callback);
       } else {
-        callback?.call('Tidak ada data yang perlu diupdate', 1);
+        callback('Tidak ada data yang perlu diupdate', 1);
       }
       Log.d('Update Data Sales', update.toString());
 
@@ -162,7 +162,7 @@ class DataSynchronization {
       if (deletedList.isNotEmpty) {
         delete = await db.deleteDataSales(deletedList,callback: callback);
       } else {
-        callback?.call('Tidak ada data yang perlu dihapus', 1);
+        callback('Tidak ada data yang perlu dihapus', 1);
       }
       Log.d('Delete Data Sales', delete.toString());
 
@@ -174,11 +174,11 @@ class DataSynchronization {
           callback: callback,
         );
       } else {
-        callback?.call('Tidak ada data yang perlu ditambahkan', 1);
+        callback('Tidak ada data yang perlu ditambahkan', 1);
       }
       Log.d('Add Data Sales', add.toString());
 
-      callback?.call('Sinkronisasi data sales selesai', 1);
+      callback('Sinkronisasi data sales selesai', 1);
       return true;
     } catch (e) {
       Log.d('Load Data Sales', e.toString());
@@ -187,7 +187,7 @@ class DataSynchronization {
   }
 
   Future<bool> syncDataPurchases({
-    Function(String status, double progress)? callback,
+    required Function(String status, double progress) callback,
   }) async {
     String query = "SELECT * FROM purchases";
     try {
@@ -212,7 +212,7 @@ class DataSynchronization {
       if (updatedList.isNotEmpty) {
         update = await db.updateDataPurchases(updatedList,callback: callback);
       } else {
-        callback?.call('Tidak ada data yang perlu diupdate', 1);
+        callback('Tidak ada data yang perlu diupdate', 1);
       }
       Log.d('Update Data Purchases', update.toString());
 
@@ -220,7 +220,7 @@ class DataSynchronization {
       if (deletedList.isNotEmpty) {
         delete = await db.deleteDataPurchases(deletedList,callback: callback);
       } else {
-        callback?.call('Tidak ada data yang perlu dihapus', 1);
+        callback('Tidak ada data yang perlu dihapus', 1);
       }
       Log.d('Delete Data Purchases', delete.toString());
 
@@ -232,11 +232,11 @@ class DataSynchronization {
           callback: callback,
         );
       } else {
-        callback?.call('Tidak ada data yang perlu ditambahkan', 1);
+        callback('Tidak ada data yang perlu ditambahkan', 1);
       }
       Log.d('Add Data Purchases', add.toString());
 
-      callback?.call('Sinkronisasi data purchases selesai', 1);
+      callback('Sinkronisasi data purchases selesai', 1);
       return true;
     } catch (e) {
       Log.d('Load Data Purchases', e.toString());

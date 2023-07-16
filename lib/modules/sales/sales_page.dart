@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:stockmobilesync/models/sales.dart';
 import 'package:stockmobilesync/modules/sales/sales_controller.dart';
+import 'package:stockmobilesync/utils/empty_data_widget.dart';
 import 'package:stockmobilesync/utils/helper.dart';
 
 import 'content_sales.dart';
@@ -31,8 +32,10 @@ class PenjualanPage extends StatelessWidget {
                         border: InputBorder.none,
                       ),
                       onChanged: (value) {
-                        ctx.searchSales(value);
+                        ctx.sales.clear();
                         ctx.searchQuery.value = value;
+                        ctx.offset = 0;
+                        ctx.searchSales();
                       },
                     )
                   : const Text('Data Penjualan'),
@@ -46,7 +49,11 @@ class PenjualanPage extends StatelessWidget {
                     if (!ctx.isSearch.value) {
                       searchController.clear();
                       ctx.searchQuery.value = '';
+                      ctx.sales.clear();
                       ctx.getSalesMaster();
+                    }
+                    if (ctx.isSearchCustomer.value) {
+                      ctx.isSearchCustomer.value = false;
                     }
                   },
                   icon: Icon(
@@ -54,26 +61,45 @@ class PenjualanPage extends StatelessWidget {
                   ),
                 ),
               ),
-              Obx(() {
-                bool state = ctx.fromDate.value.isEmpty && ctx.toDate.value.isEmpty;
-                  return IconButton(
+              Obx(() => IconButton(
                     onPressed: () {
-                    if(state)  {
+                      ctx.isSearchCustomer.value = !ctx.isSearchCustomer.value;
+                      if (!ctx.isSearchCustomer.value) {
+                        searchController.clear();
+                        ctx.searchQuery.value = '';
+                        ctx.sales.clear();
+                        ctx.getSalesMaster();
+                      }
+                      if (ctx.isSearch.value) {
+                        ctx.isSearch.value = false;
+                      }
+                    },
+                    icon: Icon(
+                      ctx.isSearchCustomer.value
+                          ? Icons.clear
+                          : Icons.account_circle_outlined,
+                    ),
+                  )),
+              Obx(() {
+                bool state =
+                    ctx.fromDate.value.isEmpty && ctx.toDate.value.isEmpty;
+                return IconButton(
+                  onPressed: () {
+                    if (state) {
                       showDateFilterSheet(context, ctx);
                     } else {
                       ctx.clearFilter();
                       ctx.getSalesMaster();
                     }
                   },
-                    icon: Icon(
-                      state ? Icons.date_range : Icons.format_clear,
-                    ),
-                  );
-                }
-              ),
+                  icon: Icon(
+                    state ? Icons.date_range : Icons.format_clear,
+                  ),
+                );
+              }),
             ],
           ),
-          body: Obx(() => ctx.isLoading.value
+          body: Obx(() => ctx.isLoading.value && ctx.sales.isEmpty
               ? const Center(
                   child: CircularProgressIndicator(),
                 )
@@ -83,16 +109,44 @@ class PenjualanPage extends StatelessWidget {
     );
   }
 
-  buildList(BuildContext context, SalesController ctx) {
+  buildList(
+    BuildContext context,
+    SalesController ctx,
+  ) {
     bool state = ctx.fromDate.isNotEmpty && ctx.toDate.isNotEmpty;
+    final double width = MediaQuery.of(context).size.width;
     return Obx(
       () {
         return ctx.sales.isEmpty
-            ? const Center(
-                child: Text('Data Kosong'),
-              )
+            ? EmptyData(width: width)
             : Column(
                 children: [
+                  ctx.isSearchCustomer.value
+                      ? Container(
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 10,
+                          ),
+                          child: TextField(
+                            controller: searchController,
+                            decoration: const InputDecoration(
+                              hintText: 'Cari Nama Customer',
+                              prefixIcon: Icon(Icons.search),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(20),
+                                ),
+                              ),
+                            ),
+                            onChanged: (value) {
+                              ctx.sales.clear();
+                              ctx.searchCustomerQuery.value = value;
+                              ctx.offset = 0;
+                              ctx.searchCustomer();
+                            },
+                          ),
+                        )
+                      : const SizedBox(),
                   state
                       ? Container(
                           color: Colors.grey[200],
@@ -104,22 +158,31 @@ class PenjualanPage extends StatelessWidget {
                             children: [
                               Expanded(
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     TextButton(
-                                      onPressed: (){
+                                      onPressed: () {
                                         selectDate(
                                           context,
                                           ctx,
                                           'from',
                                         );
                                       },
-                                      child: Text(Helper.convertToDate(ctx.fromDate.value),
+                                      child: Text(
+                                        Helper.convertToDate(
+                                            ctx.fromDate.value),
+                                        style: TextStyle(
+                                          fontSize: width * 0.035,
+                                        ),
                                       ),
                                     ),
-                                    const Icon(Icons.arrow_forward),
+                                    Icon(
+                                      Icons.arrow_forward,
+                                      size: width * 0.05,
+                                    ),
                                     TextButton(
-                                      onPressed: (){
+                                      onPressed: () {
                                         selectDate(
                                           context,
                                           ctx,
@@ -128,16 +191,25 @@ class PenjualanPage extends StatelessWidget {
                                       },
                                       child: Text(
                                         Helper.convertToDate(ctx.toDate.value),
+                                        style: TextStyle(
+                                          fontSize: width * 0.035,
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
+                              const SizedBox(width: 10),
                               InkWell(
                                 onTap: () {
-                                  ctx.filterSales(ctx.fromDate.value, ctx.toDate.value);
+                                  ctx.sales.clear();
+                                  ctx.offset = 0;
+                                  ctx.filterSales();
                                 },
-                                child: const Icon(Icons.send),
+                                child: Icon(
+                                  Icons.send,
+                                  size: width * 0.05,
+                                ),
                               )
                             ],
                           ),
@@ -145,6 +217,7 @@ class PenjualanPage extends StatelessWidget {
                       : const SizedBox(),
                   Expanded(
                     child: ListView.builder(
+                      controller: ctx.scrollController,
                       itemCount: ctx.sales.length,
                       itemBuilder: (context, index) {
                         return Container(
@@ -159,23 +232,37 @@ class PenjualanPage extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(20)),
                             title: Text(
                               '${ctx.sales[index].nama}',
-                              style: const TextStyle(fontSize: 20),
+                              style: TextStyle(
+                                fontSize: width * 0.05,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             onTap: () {
                               showDetailSales(ctx.sales[index]);
                             },
                             subtitle: ContentSalesProduct(
                               index: index,
+                              width: width,
                             ),
                             contentPadding: const EdgeInsets.symmetric(
                               vertical: 10,
-                              horizontal: 20,
+                              horizontal: 12,
                             ),
                           ),
                         );
                       },
                     ),
                   ),
+                  ctx.isLoadMoreData.value
+                      ? Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.symmetric(
+                            vertical: 10,
+                          ),
+                          child:
+                              const Center(child: CircularProgressIndicator()),
+                        )
+                      : const SizedBox(),
                 ],
               );
       },
@@ -289,20 +376,19 @@ class PenjualanPage extends StatelessWidget {
               children: [
                 const Text('Dari Tanggal'),
                 Obx(() => TextButton(
-                  onPressed: () {
-                    selectDate(
-                      context,
-                      ctx,
-                      'from',
-                    );
-                  },
-                  child: Text(
-                    ctx.fromDate.value.isEmpty
-                        ? 'Pilih Tanggal'
-                        : Helper.convertToDate(
-                        ctx.fromDate.value),
-                  ),
-                )),
+                      onPressed: () {
+                        selectDate(
+                          context,
+                          ctx,
+                          'from',
+                        );
+                      },
+                      child: Text(
+                        ctx.fromDate.value.isEmpty
+                            ? 'Pilih Tanggal'
+                            : Helper.convertToDate(ctx.fromDate.value),
+                      ),
+                    )),
               ],
             ),
             Row(
@@ -310,50 +396,47 @@ class PenjualanPage extends StatelessWidget {
               children: [
                 const Text('Sampai Tanggal'),
                 Obx(() => TextButton(
-                  onPressed: () {
-                    selectDate(
-                      context,
-                      ctx,
-                      'to',
-                    );
-                  },
-                  child: Text(
-                    ctx.toDate.value.isEmpty
-                        ? 'Pilih Tanggal'
-                        : Helper.convertToDate(
-                        ctx.toDate.value),
-                  ),
-                )),
+                      onPressed: () {
+                        selectDate(
+                          context,
+                          ctx,
+                          'to',
+                        );
+                      },
+                      child: Text(
+                        ctx.toDate.value.isEmpty
+                            ? 'Pilih Tanggal'
+                            : Helper.convertToDate(ctx.toDate.value),
+                      ),
+                    )),
               ],
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                if(ctx.toDate.value.isNotEmpty && ctx.fromDate.value.isNotEmpty){
-                  ctx.filterSales(
-                    ctx.fromDate.value,
-                    ctx.toDate.value,
-                  );
+                if (ctx.toDate.value.isNotEmpty &&
+                    ctx.fromDate.value.isNotEmpty) {
+                  ctx.offset = 0;
+                  ctx.filterSales();
                   Get.back();
                 } else {
-                  Get.dialog(
-                      WillPopScope(
-                        onWillPop: () async => false,
-                        child: AlertDialog(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          title: const Text('Perhatian!'),
-                          content: const Text('Silahkan isi Tanggal mulai dan Tanggal akhir untuk mendapatkan filter produk'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Get.back(),
-                              child: const Text('OK'),
-                            )
-                          ],
-                        ),
-                      )
-                  );
+                  Get.dialog(WillPopScope(
+                    onWillPop: () async => false,
+                    child: AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      title: const Text('Perhatian!'),
+                      content: const Text(
+                          'Silahkan isi Tanggal mulai dan Tanggal akhir untuk mendapatkan filter produk'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Get.back(),
+                          child: const Text('OK'),
+                        )
+                      ],
+                    ),
+                  ));
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -373,8 +456,10 @@ class PenjualanPage extends StatelessWidget {
   }
 
   void selectDate(BuildContext context, SalesController ctx, String date) {
-    DateTime? fromDate = ctx.fromDate.value.isEmpty ? null : DateTime.parse(ctx.fromDate.value);
-    DateTime? toDate = ctx.toDate.value.isEmpty ? null : DateTime.parse(ctx.toDate.value);
+    DateTime? fromDate =
+        ctx.fromDate.value.isEmpty ? null : DateTime.parse(ctx.fromDate.value);
+    DateTime? toDate =
+        ctx.toDate.value.isEmpty ? null : DateTime.parse(ctx.toDate.value);
     showDatePicker(
       context: context,
       initialDate: ctx.fromDate.value.isEmpty
@@ -388,9 +473,7 @@ class PenjualanPage extends StatelessWidget {
           : DateTime(toDate!.year, toDate.month, toDate.day),
     ).then((value) {
       if (value != null) {
-        String selectedDate = value
-            .toString()
-            .substring(0,
+        String selectedDate = value.toString().substring(0,
             10); // Ambil substring dari indeks 0 hingga 9 untuk mendapatkan format 'yyyy-MM-dd'
         if (date == 'to') {
           ctx.toDate.value = selectedDate;

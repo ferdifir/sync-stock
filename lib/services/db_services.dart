@@ -40,7 +40,7 @@ class DbServices {
       for (var element in data) {
         double iteration = data.indexOf(element) / data.length;
         if (callback != null) {
-          callback('Memasukkan data ${element['nama']}', iteration);
+          callback('Memasukkan data $tableName: ${element['nama']}', iteration);
         }
         await database.insert(tableName, element);
       }

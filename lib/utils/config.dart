@@ -7,6 +7,7 @@ const String dbPurchasesVersion = 'dbPurchasesVersion';
 const String levelPrefKey = 'level';
 const String namePrefKey = 'name';
 const String emailPrefKey = 'email';
+const String sessionIdPrefKey = 'sessionId';
 const String rememberMePrefKey = 'rememberMe';
 const String firstTimeSync = 'firstTime';
 

@@ -14,6 +14,7 @@ class MasterController extends GetxController {
   RxBool isAktif = true.obs;
   RxString level = RxString('');
   SharedPreferences? pref;
+  String sessionId = Get.arguments;
 
   @override
   void onInit() async {

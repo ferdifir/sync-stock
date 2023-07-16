@@ -12,6 +12,7 @@ class PurchasesController extends GetxController {
   RxString searchQuery = ''.obs;
   RxString fromDate = ''.obs;
   RxString toDate = ''.obs;
+  String sessionId = Get.arguments;
 
   @override
   void onInit() {

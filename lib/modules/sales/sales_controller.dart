@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:stockmobilesync/models/sales.dart';
 import 'package:stockmobilesync/services/db_services.dart';
@@ -10,13 +11,34 @@ class SalesController extends GetxController {
   RxBool isSearch = false.obs;
   RxBool isLoading = false.obs;
   RxString searchQuery = ''.obs;
+  RxString searchCustomerQuery = ''.obs;
   RxString fromDate = ''.obs;
   RxString toDate = ''.obs;
+  int offset = 0;
+  RxBool isLoadMoreData = false.obs;
+  final scrollController = ScrollController();
+  String statusQuery = 'master';
+  String sessionId = Get.arguments;
+  RxBool isSearchCustomer = false.obs;
 
   @override
   void onInit() {
     super.onInit();
     getSalesMaster();
+    scrollController.addListener(() {
+      if (scrollController.position.pixels ==
+          scrollController.position.maxScrollExtent) {
+        if (statusQuery == 'master') {
+          getSalesMaster();
+        } else if (statusQuery == 'search') {
+          searchSales();
+        } else if (statusQuery == 'search customer') {
+          searchCustomer();
+        } else {
+          filterSales();
+        }
+      }
+    });
   }
 
   clearFilter() {
@@ -30,40 +52,84 @@ class SalesController extends GetxController {
 
   getSalesMaster() async {
     isLoading.value = true;
-    sales.clear();
+    isLoadMoreData.value = true;
+    statusQuery = 'master';
+    //sales.clear();
     try {
-      String query = "SELECT * FROM sales";
-      sales.value = await getListData(query);
+      String query = sessionId.isEmpty
+          ? "SELECT * FROM sales ORDER BY tgl DESC LIMIT 10 OFFSET $offset"
+          : "SELECT * FROM sales WHERE kdsales = '$sessionId' ORDER BY tgl DESC LIMIT 10 OFFSET $offset";
+      offset += 10;
+      List<Sales> updatedSales = await getListData(query);
+      sales.addAll(updatedSales);
+      isLoadMoreData.value = false;
       isLoading.value = false;
-    } catch(e) {
+    } catch (e) {
       Log.e('Get List Sales', e.toString());
       isLoading.value = false;
+      isLoadMoreData.value = false;
     }
   }
 
-  searchSales(String keyword) async {
+  searchSales() async {
     isLoading.value = true;
-    sales.clear();
+    isLoadMoreData.value = true;
+    statusQuery = 'search customer';
+    //sales.clear();
     try {
-      String query = "SELECT * FROM sales WHERE nama LIKE '%$keyword%' ORDER BY tgl DESC";
-      sales.value = await getListData(query);
+      String query = sessionId.isEmpty
+          ? "SELECT * FROM sales WHERE nama LIKE '%${searchQuery.value}%' ORDER BY tgl DESC LIMIT 10 OFFSET $offset"
+          : "SELECT * FROM sales WHERE nama LIKE '%${searchQuery.value}%' AND kdsales = '$sessionId' ORDER BY tgl DESC LIMIT 10 OFFSET $offset";
+      offset += 10;
+      List<Sales> updatedSales = await getListData(query);
+      sales.addAll(updatedSales);
+      isLoadMoreData.value = false;
       isLoading.value = false;
-    } catch(e) {
+    } catch (e) {
       Log.e('Search Sales', e.toString());
       isLoading.value = false;
+      isLoadMoreData.value = false;
     }
   }
 
-  filterSales(String from, String to) async {
+  searchCustomer() async {
     isLoading.value = true;
-    sales.clear();
+    isLoadMoreData.value = true;
+    statusQuery = 'search customer';
+    //sales.clear();
     try {
-      String query = "SELECT * FROM sales WHERE nama LIKE '%${searchQuery.value}%' AND tgl BETWEEN '$from' AND '$to' ORDER BY tgl DESC";
-      sales.value = await getListData(query);
+      String query = sessionId.isEmpty
+          ? "SELECT * FROM sales WHERE nama LIKE '%${searchCustomerQuery.value}%' ORDER BY tgl DESC LIMIT 10 OFFSET $offset"
+          : "SELECT * FROM sales WHERE nama LIKE '%${searchCustomerQuery.value}%' AND kdsales = '$sessionId' ORDER BY tgl DESC LIMIT 10 OFFSET $offset";
+      offset += 10;
+      List<Sales> updatedSales = await getListData(query);
+      sales.addAll(updatedSales);
+      isLoadMoreData.value = false;
       isLoading.value = false;
-    } catch(e) {
+    } catch (e) {
+      Log.e('Search Sales', e.toString());
+      isLoading.value = false;
+      isLoadMoreData.value = false;
+    }
+  }
+
+  filterSales() async {
+    isLoading.value = true;
+    //sales.clear();
+    statusQuery = 'filter';
+    try {
+      String query = sessionId.isEmpty
+          ? "SELECT * FROM sales WHERE nama LIKE '%${searchQuery.value}%' AND tgl BETWEEN '${fromDate.value}' AND '${toDate.value}' ORDER BY tgl DESC LIMIT 10 OFFSET $offset"
+          : "SELECT * FROM sales WHERE nama LIKE '%${searchQuery.value}%' AND tgl BETWEEN '${fromDate.value}' AND '${toDate.value}' AND kdsales = '$sessionId' ORDER BY tgl DESC LIMIT 10 OFFSET $offset";
+      offset += 10;
+      List<Sales> updatedSales = await getListData(query);
+      sales.addAll(updatedSales);
+      isLoadMoreData.value = false;
+      isLoading.value = false;
+    } catch (e) {
       Log.e('Filter Sales', e.toString());
       isLoading.value = false;
+      isLoadMoreData.value = false;
     }
   }
 

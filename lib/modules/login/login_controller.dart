@@ -62,5 +62,6 @@ class LoginController extends GetxController {
     pref!.setString(namePrefKey, listUser[0].fullName);
     pref!.setString(emailPrefKey, listUser[0].email);
     pref!.setString(levelPrefKey, listUser[0].level);
+    pref!.setString(sessionIdPrefKey, listUser[0].sessionId);
   }
 }
