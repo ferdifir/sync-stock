@@ -1,5 +1,7 @@
 # Stock Mobile Sync
 
+![Screenshot UI](https://github.com/ferdifir/sync-stock/blob/main/screenshot/synctock.png)
+
 Aplikasi Flutter yang dibangun dengan fitur-fitur berikut:
 
 - Login: Memungkinkan pengguna untuk masuk ke aplikasi menggunakan akun mereka.
